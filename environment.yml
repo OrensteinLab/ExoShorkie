@@ -11,8 +11,6 @@ dependencies:
 
   # Bio / genomics tools
   - biopython
-  - blat
-  - ushuffle
   - meme
 
   # Scientific stack (commonly required)
@@ -33,7 +31,6 @@ dependencies:
       - git+https://github.com/calico/baskerville-yeast.git@main
       - modisco-lite==2.4.0
       - pybedtools==0.9.1
-      - qnorm==0.8.1
 
       # Utilities
       - tqdm==4.65.2
