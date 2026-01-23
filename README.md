@@ -29,7 +29,7 @@ ExoShorkie is run using a Conda environment. While an NVIDIA GPU is recommended 
 
 1. Clone the repository:
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/OrensteinLab/ExoShorkie.git
 cd ExoShorkie
 ```
 
