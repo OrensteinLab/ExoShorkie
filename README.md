@@ -25,6 +25,29 @@ ExoShorkie is run using a Conda environment. While an NVIDIA GPU is recommended 
 - **Conda** installed on your system (Miniconda or Anaconda).
 - **(Optional) GPU Support:** A compatible NVIDIA GPU with appropriate CUDA drivers installed. GPU support depends on the local system configuration. The provided Conda environment is CPU-compatible by default.
 
+### Dependencies
+
+ExoShorkie relies on the Baskerville sequence modeling framework  
+(https://github.com/calico/baskerville-yeast), which is installed automatically via pip during environment creation.
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/OrensteinLab/ExoShorkie.git
+cd ExoShorkie
+```
+
+2. Create the Conda environment:
+```bash
+conda env create -f environment.yml
+```
+
+3. Activate the environment:
+```bash
+conda activate shorki
+```
+
 ## Pretrained Shorkie Models
 
 ExoShorkie fine-tunes an ensemble of pretrained Shorkie models. These models are **not included** in this repository.
@@ -55,28 +78,7 @@ Models/
     └── f7/
 ```
     
-### Dependencies
 
-ExoShorkie relies on the Baskerville sequence modeling framework  
-(https://github.com/calico/baskerville-yeast), which is installed automatically via pip during environment creation.
-
-### Setup
-
-1. Clone the repository:
-```bash
-git clone https://github.com/OrensteinLab/ExoShorkie.git
-cd ExoShorkie
-```
-
-2. Create the Conda environment:
-```bash
-conda env create -f environment.yml
-```
-
-3. Activate the environment:
-```bash
-conda activate shorki
-```
 
 ## Training and Evaluation Scripts
 
