@@ -52,7 +52,7 @@ conda activate shorki
 
 ExoShorkie fine-tunes an ensemble of pretrained Shorkie models. These models are **not included** in this repository.
 
-Please download the pretrained Shorkie models from the original authors:
+The pretrained Shorkie models are hosted on **Google Cloud Storage** by the original authors:
 
 gs://seqnn-share/shorkie/
 
