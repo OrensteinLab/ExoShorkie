@@ -41,7 +41,6 @@ gsutil -m cp -r gs://seqnn-share/shorkie Models/shorkie
 
 The expected directory structure is an 8-model ensemble (f0–f7):
 
-```markdown
 ```text
 Models/
 └── shorkie/
