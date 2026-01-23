@@ -13,7 +13,7 @@ ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous g
 
 ## Introduction
 
-ExoShorkie is the first method that leverages transfer learning from a native-genome-trained model to predict RNA-seq coverage of exogenous DNA in yeast. It is based on the architecture and pretrained model introduced in the paper *Predicting dynamic expression patterns in budding yeast with a fungal DNA language model* by Chao et al.  
+ExoShorkie is the first method that leverages transfer learning from a native-genome-trained model to predict RNA-seq coverage of exogenous DNA in yeast. It is based on the Shorkie model introduced in the paper *Predicting dynamic expression patterns in budding yeast with a fungal DNA language model* by Chao et al.  
 https://www.biorxiv.org/content/10.1101/2025.09.19.677475v1
 
 ## Getting Started
@@ -49,12 +49,12 @@ Training scripts for ExoShorkie models, along with evaluation and interpretabili
 
 ## Model Training Data
 
-ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper. All preprocessed datasets used for model training and evaluation are archived on Figshare at:  
+ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper. All preprocessed datasets used for model training and evaluation are available on Figshare at:  
 https://doi.org/10.6084/m9.figshare.31075375
 
 ## Trained Models
 
-Trained ExoShorkie ensemble models are available on Hugging Face at:  
+All trained ExoShorkie ensemble models are available on Hugging Face at:  
 https://huggingface.co/Jonathan-Mandl/ExoShorkie-models
 
 ## Contact
