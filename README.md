@@ -25,6 +25,11 @@ ExoShorkie is run using a Conda environment. While an NVIDIA GPU is recommended 
 - **Conda** installed on your system (Miniconda or Anaconda).
 - **(Optional) GPU Support:** A compatible NVIDIA GPU with appropriate CUDA drivers installed. GPU support depends on the local system configuration. The provided Conda environment is CPU-compatible by default.
 
+### Dependencies
+
+ExoShorkie relies on the Baskerville sequence modeling framework  
+(https://github.com/calico/baskerville-yeast), which is installed automatically via pip during environment creation.
+
 ### Setup
 
 1. Clone the repository:
