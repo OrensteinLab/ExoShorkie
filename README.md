@@ -25,6 +25,37 @@ ExoShorkie is run using a Conda environment. While an NVIDIA GPU is recommended 
 - **Conda** installed on your system (Miniconda or Anaconda).
 - **(Optional) GPU Support:** A compatible NVIDIA GPU with appropriate CUDA drivers installed. GPU support depends on the local system configuration. The provided Conda environment is CPU-compatible by default.
 
+## Pretrained Shorkie Models
+
+ExoShorkie fine-tunes an ensemble of pretrained Shorkie models. These models are **not included** in this repository.
+
+Please download the pretrained Shorkie models from the original authors:
+
+gs://seqnn-share/shorkie/
+
+The models can be downloaded using `gsutil`:
+
+```bash
+gsutil -m cp -r gs://seqnn-share/shorkie Models/shorkie
+```
+
+The expected directory structure is an 8-model ensemble (f0–f7):
+
+```markdown
+```text
+Models/
+└── shorkie/
+    ├── params.json
+    ├── f0/
+    ├── f1/
+    ├── f2/
+    ├── f3/
+    ├── f4/
+    ├── f5/
+    ├── f6/
+    └── f7/
+```
+    
 ### Dependencies
 
 ExoShorkie relies on the Baskerville sequence modeling framework  
