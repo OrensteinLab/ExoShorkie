@@ -49,7 +49,7 @@ Training scripts for ExoShorkie models, along with evaluation and interpretabili
 
 ## Model Training Data
 
-ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper. All datasets used for model training and evaluation are archived on Figshare at:  
+ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper. All preprocessed datasets used for model training and evaluation are archived on Figshare at:  
 https://doi.org/10.6084/m9.figshare.31075375
 
 ## Trained Models
