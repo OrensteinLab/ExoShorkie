@@ -100,7 +100,7 @@ After downloading, the expected directory structure is:
 
 ```text
 Models/
-├── Data_storage_chr/
+├── Data_storage_chr/cv0/
 │   ├── f0/model_finetune.h5
 │   ├── f1/
 │   ├── ...
