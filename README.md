@@ -21,7 +21,7 @@ ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous g
 
 ## Introduction
 
-ExoShorkie is, to our knowledge, the first method that leverages transfer learning from a native-genome-trained yeast model to predict RNA-seq coverage of exogenous DNA.
+ExoShorkie is the first method that leverages transfer learning from a native-genome-trained yeast model to predict RNA-seq coverage of exogenous DNA.
 
 It is based on the Shorkie model introduced in:
 
