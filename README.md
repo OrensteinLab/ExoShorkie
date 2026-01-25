@@ -101,17 +101,21 @@ After downloading, the expected directory structure is:
 ```text
 Models/
 ├── Data_storage_chr/
-│   ├── f0/model_finetune.h5
-│   ├── f1/
-│   ├── ...
-│   └── f7/
+│   ├── cv0/
+│   │   ├── f0/model_finetune.h5
+│   │   ├── f1/model_finetune.h5
+│   │   ├── ...
+│   │   └── f7/model_finetune.h5
+│   ├── cv1/
+│   │   └── ...
+│   └── cv4/
+│       └── ...
 ├── HPRT1/
 ├── HPRT1R/
 ├── Human_chr_7/
 ├── M_mycoides/
 ├── M_pneumoniae/
 ├── NatShorkie/
-└── shorkie/
 ```
 
 Each dataset contains an ensemble of 8 fine-tuned models (f0–f7) for each cross-validation fold.
