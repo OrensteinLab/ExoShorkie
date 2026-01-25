@@ -15,7 +15,6 @@ Required flag:
 import os, random, numpy as np
 SEED = 42
 
-os.environ["CUDA_VISIBLE_DEVICES"]   = "1"
 os.environ["PYTHONHASHSEED"]         = str(SEED)
 os.environ["TF_DETERMINISTIC_OPS"]   = "1"
 os.environ["TF_CUDNN_DETERMINISTIC"] = "1"
@@ -38,19 +37,16 @@ from src.data_loader import *
 
 # ---------- CONSTANTS / PATHS ----------
 PARAMS_JSON          = "Models/shorkie/params.json"
-TRUNK_H5_TEMPLATE    = "Models/shorkie/f0/model_best.h5"          # edit if you have multiple folds
+TRUNK_H5_TEMPLATE    = "Models/shorkie/f0/model_best.h5"        
 NPZ_TEMPLATE         = "Distillation/{chrom}/synthetic_{chrom}_mean_preds.npz"
 OUT_WEIGHTS_TEMPLATE = "Distillation/{chrom}/student_{chrom}_distilled.h5"
 
+# --- Default hyperparameters (used in the paper) ---
 WINDOW_BP = 16384
-EPOCHS     = 20      # can be high, early stopping will cut it
+EPOCHS     = 20     
 BATCH_SIZE = 64
 LR        = 2e-5
 # ------------------------------------
-
-
-def cast_uint8_to_bf16(x):
-    return tf.cast(x, tf.bfloat16)
 
 
 def make_ds(seqs, labels, batch_size=BATCH_SIZE):
@@ -134,6 +130,21 @@ def parse_args():
     return p.parse_args()
 # ------------------------------------
 
+def build_student(params, trunk_h5):
+    m = SeqNN(params["model"])
+    before = [w.numpy().copy() for w in m.model_trunk.weights]
+
+    m.model_trunk.load_weights(trunk_h5, by_name=True)
+
+    after = [w.numpy() for w in m.model_trunk.weights]
+    changed = any(np.any(b != a) for b, a in zip(before, after))
+    if not changed:
+        raise RuntimeError(f"No trunk weights loaded from {trunk_h5} (name mismatch/path?)")
+
+    trunk_out = m.model_trunk.output
+    y = tf.keras.layers.Dense(1, name="distill_head")(trunk_out)
+    y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
+    return tf.keras.Model(inputs=m.model.input, outputs=y)
 
 def main():
     args = parse_args()
@@ -165,35 +176,7 @@ def main():
 
     # ---- Build Shorkie trunk and load pretrained weights ----
     print("\nBuilding Shorkie trunk via SeqNN...")
-    m = SeqNN(params["model"])
-
-    before = [w.numpy().copy() for w in m.model_trunk.weights]
-
-    trunk_h5 = TRUNK_H5_TEMPLATE
-    print(f"Loading pretrained trunk weights from {trunk_h5}")
-    status = m.model_trunk.load_weights(trunk_h5, by_name=True)
-
-    after = [w.numpy() for w in m.model_trunk.weights]
-    changed = any(np.any(b != a) for b, a in zip(before, after))
-    print(f"Loaded weights from {trunk_h5}? {changed}")
-    print(status)
-
-    if not changed:
-        raise RuntimeError(
-            f"ERROR: No weights were loaded from {trunk_h5}. "
-            f"Check the path or weight names."
-        )
-
-    trunk_out = m.model_trunk.output  # (None, 896, C)
-
-    # ---- New per-bin head for distillation ----
-    y = tf.keras.layers.Dense(1, name="distill_head")(trunk_out)
-    y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)  # (None, 896)
-
-    student = tf.keras.Model(
-        inputs=m.model.input,
-        outputs=y
-    )
+    student = build_student(params, TRUNK_H5_TEMPLATE)
 
     student.summary(line_length=120)
 
@@ -214,7 +197,6 @@ def main():
     out_path = OUT_WEIGHTS_TEMPLATE.format(chrom=chrom)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-    print("\nStarting distillation training with train/val and early stopping...")
     history = student.fit(
         train_ds,
         epochs=EPOCHS,
@@ -222,7 +204,7 @@ def main():
     )
 
     student.save_weights(out_path)
-    print(f"\nTraining finished. Final (early-stopped) student weights saved to: {out_path}")
+    print(f"\nTraining finished. Final student weights saved to: {out_path}")
 
 
 if __name__ == "__main__":

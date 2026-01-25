@@ -1,73 +1,145 @@
 # ExoShorkie
 
-ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous genomes in yeast using transfer learning, as proposed in the paper *ExoShorkie: Predicting RNA-seq coverage of exogenous genomes in yeast by transfer learning*.
+ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous genomes in yeast using transfer learning, as proposed in the paper:
+
+*ExoShorkie: Predicting RNA-seq coverage of exogenous genomes in yeast by transfer learning*
+
+---
 
 ## Table of Contents
 
 - [Introduction](#introduction)
 - [Getting Started](#getting-started)
-- [Training and Evaluation Scripts](#training-and-evaluation-scripts)
-- [Model Training Data](#model-training-data)
 - [Trained Models](#trained-models)
+- [Pretrained Shorkie Models](#pretrained-shorkie-models)
+- [Prediction](#prediction)
+- [Training](#training)
+- [Model Training Data](#model-training-data)
 - [Contact](#contact)
+
+---
 
 ## Introduction
 
-ExoShorkie is the first method that leverages transfer learning from a native-genome-trained model to predict RNA-seq coverage of exogenous DNA in yeast. It is based on the Shorkie model introduced in the paper *Predicting dynamic expression patterns in budding yeast with a fungal DNA language model* by Chao et al.  
+ExoShorkie is, to our knowledge, the first method that leverages transfer learning from a native-genome-trained yeast model to predict RNA-seq coverage of exogenous DNA.
+
+It is based on the Shorkie model introduced in:
+
+*Predicting dynamic expression patterns in budding yeast with a fungal DNA language model*  
+Chao et al.  
 https://www.biorxiv.org/content/10.1101/2025.09.19.677475v1
+
+---
 
 ## Getting Started
 
-ExoShorkie is run using a Conda environment. While an NVIDIA GPU is recommended for faster training and inference, ExoShorkie can also be run on a standard CPU (with reduced performance).
+ExoShorkie is designed to run inside a Docker environment.
+
+An NVIDIA GPU is recommended for efficient training and inference, but ExoShorkie can also run on CPU with reduced performance.
+
+---
 
 ### Prerequisites
 
-- **Conda** installed on your system (Miniconda or Anaconda).
-- **(Optional) GPU Support:** A compatible NVIDIA GPU with appropriate CUDA drivers installed. GPU support depends on the local system configuration. The provided Conda environment is CPU-compatible by default.
+- **Docker** installed on your system  
+- **(Optional) GPU Support:** NVIDIA GPU with CUDA drivers and NVIDIA Container Toolkit installed
+
+---
 
 ### Dependencies
 
-ExoShorkie relies on the Baskerville sequence modeling framework  
-(https://github.com/calico/baskerville-yeast), which is installed automatically via pip during environment creation.
+ExoShorkie relies on the Baskerville sequence modeling framework:
 
-### Setup
+https://github.com/calico/baskerville-yeast
 
-1. Clone the repository:
+All dependencies are installed automatically inside the Docker image.
+
+---
+
+## Setup
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/OrensteinLab/ExoShorkie.git
 cd ExoShorkie
 ```
 
-2. Create the Conda environment:
+---
+
+### 2. Build the Docker image
+
 ```bash
-conda env create -f environment.yml
+docker build -t exoshorkie .
 ```
 
-3. Activate the environment:
+This creates a local Docker image named `exoshorkie` containing all required dependencies.
+
+---
+
+### 3. Enter the Docker workspace
+
 ```bash
-conda activate shorki
+docker run -it --rm --gpus all \
+  --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
+  -v "$(pwd)":/workspace -w /workspace \
+  exoshorkie bash
 ```
+
+This opens an interactive shell inside the container, with the repository mounted at `/workspace`.
+
+---
+
+## Trained Models
+
+All trained ExoShorkie ensemble models are available on Hugging Face:
+
+https://huggingface.co/Jonathan-Mandl/ExoShorkie-models
+
+After downloading, the expected directory structure is:
+
+```text
+Models/
+├── Data_storage_chr/
+│   ├── f0/model_finetune.h5
+│   ├── f1/
+│   ├── ...
+│   └── f7/
+├── HPRT1/
+├── HPRT1R/
+├── Human_chr_7/
+├── M_mycoides/
+├── M_pneumoniae/
+├── NatShorkie/
+└── shorkie/
+```
+
+Each dataset contains an ensemble of 8 fine-tuned models (`f0–f7`).
+
+---
 
 ## Pretrained Shorkie Models
 
-ExoShorkie fine-tunes an ensemble of pretrained Shorkie models. These models are **not included** in this repository.
+ExoShorkie fine-tunes an ensemble of pretrained Shorkie models.  
+These pretrained models are **not included** in this repository.
 
-The pretrained Shorkie models are hosted on **Google Cloud Storage** by the original authors:
+They are hosted on Google Cloud Storage by the original authors:
 
+```text
 gs://seqnn-share/shorkie/
+```
 
-The models can be downloaded using `gsutil`:
+To download them, you need `gsutil` (Google Cloud SDK installed):
 
 ```bash
 gsutil -m cp -r gs://seqnn-share/shorkie Models/shorkie
 ```
 
-The expected directory structure is an 8-model ensemble (f0–f7):
+Expected structure:
 
 ```text
 Models/
 └── shorkie/
-    ├── params.json
     ├── f0/
     ├── f1/
     ├── f2/
@@ -77,25 +149,112 @@ Models/
     ├── f6/
     └── f7/
 ```
-    
+
+---
+
+## Prediction
+
+ExoShorkie provides a prediction script for generating RNA-seq coverage predictions over an input FASTA genome.
+
+### Script arguments
+
+The prediction script expects:
+
+- `--chrom` : dataset name the model was trained on  
+- `--cv`    : cross-validation fold index  
+- `--fold`  : ensemble member index (0–7)  
+- `--fasta` : FASTA file of the genome to predict on  
+- `--out`   : output `.npz` file path  
+- `--rc`    : (optional) generate predictions on the reverse-complement strand  
+
+---
+
+### Output format
+
+Predictions are saved as compressed NumPy `.npz` files in the `Results/` directory.
+
+- `pred_bins` contains predictions at **16 bp resolution**
+- `pred_bp` contains expanded predictions at **base-pair resolution**
+
+---
+
+### Quick prediction example
+
+```bash
+python predict.py \
+  --chrom Mpneumo \
+  --cv 0 \
+  --fold 0 \
+  --fasta Data/genome/S288c_Mpneumo.fa \
+  --out Results/pred_Mpneumo_cv0_f0.npz
+```
+
+---
+## Training
+
+ExoShorkie provides a training script for fine-tuning the native-genome baseline **NatShorkie** models on an exogenous genome using **5-fold cross-validation**.
+
+### Script arguments
+
+The training script expects the following inputs:
+
+- `--name` : name of the exogenous dataset  
+- `--chrom` : chromosome / genome identifier  
+- `--npz-fwd` : forward-strand RNA-seq coverage `.npz` file  
+- `--npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
+- `--fasta` : FASTA file of the exogenous genome  
+- `--ensemble` : number of ensemble members to train per fold  
+
+---
+
+### Output format
+
+Fine-tuned models are saved as `.h5` files under the `Models/` directory.
+
+Expected directory structure:
+
+```text
+Models/
+├── Data_storage_chr/cv0/
+│   ├── f0/model_finetune.h5
+│   ├── f1/model_finetune.h5
+│   ├── ...
+│   └── f7/model_finetune.h5
+├── HPRT1/
+├── HPRT1R/
+├── Human_chr_7/
+├── M_mycoides/
+├── M_pneumoniae/
+├── NatShorkie/
+```
 
 
-## Training and Evaluation Scripts
-
-Training scripts for ExoShorkie models, along with evaluation and interpretability scripts, are available in the `scripts/` directory. RNA-seq preprocessing scripts are located in the `Preprocessing/` directory. Plotting scripts used to recreate the figures in the paper are located in the `Plots/` directory. Motif visualization and related analyses are located in the `Motif_visualization/` directory.
+###  Example usage
+```bash
+python train.py \
+  --name Mpneumo \
+  --chrom Mpneumo \
+  --fasta Data/genome/Mpneumo.fa \
+  --npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
+  --npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz \
+  --ensemble 1
+  ```
 
 ## Model Training Data
 
-ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper. All preprocessed datasets used for model training and evaluation are available on Figshare at:  
+ExoShorkie is trained on six exogenous RNA-seq datasets described in the main paper.
+
+All preprocessed datasets used for training and evaluation are available on Figshare:
+
 https://doi.org/10.6084/m9.figshare.31075375
 
-## Trained Models
-
-All trained ExoShorkie ensemble models are available on Hugging Face at:  
-https://huggingface.co/Jonathan-Mandl/ExoShorkie-models
+---
 
 ## Contact
 
-For issues or questions regarding ExoShorkie, please contact:  
+For issues or questions regarding ExoShorkie, please contact:
+
 **Jonathan Mandl**  
 📧 jonathan.mandl2@gmail.com
+
+---

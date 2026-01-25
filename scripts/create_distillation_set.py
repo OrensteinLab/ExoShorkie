@@ -2,7 +2,6 @@
 
 # ---------- Reproducibility (must be before importing TF) ----------
 import os, random, numpy as np
-os.environ["CUDA_VISIBLE_DEVICES"]   = "1"
 import argparse
 import json
 import gzip # Added missing import

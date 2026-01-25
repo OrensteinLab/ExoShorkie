@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import json
 import argparse
 import numpy as np
@@ -10,10 +9,9 @@ from scipy.stats import spearmanr
 from tensorflow.keras import mixed_precision
 from baskerville.seqnn import SeqNN
 from pathlib import Path
-
-# --- IMPORT FROM YOUR LIBRARY ---
 from src.data_loader import *
-# --- CONFIG ---
+
+# --- Default hyperparameters (used in the paper) ---
 SEED = 42
 WINDOW_BP     = 16384
 CROP_BP       = 1024

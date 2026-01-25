@@ -21,7 +21,7 @@ import json
 import re
 
 # ================== Configuration ==================
-DEVICE = "cuda:1" if torch.cuda.is_available() else "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Model Parameters
 INPUT_LEN = 4992 

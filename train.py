@@ -23,7 +23,7 @@ BATCH_SIZE = 32
 TARGET_WINS = 10_000
 
 # Params
-PARAMS_JSON = "Models/shorkie/params.json" 
+PARAMS_JSON = "Shorki_params.json" 
 
 def setup_env():
     """Sets seeds and environment variables for reproducibility."""
@@ -41,23 +41,14 @@ def setup_env():
 def parse_args():
     parser = argparse.ArgumentParser(description="Train/Finetune SeqNN with K-Fold CV")
     
-    # --- Mode Control ---
-    parser.add_argument("--ablation", action="store_true", 
-                        help="If set, loads base weights from 'Finetuned_models_ablation'. Else 'Finetuned_models'.")
-    
-    # --- Source 1 (Required) ---
-    parser.add_argument("--src1-name", type=str, default="src1")
-    parser.add_argument("--src1-chrom", type=str, required=True)
-    parser.add_argument("--src1-npz-fwd", type=str, required=True)
-    parser.add_argument("--src1-npz-rev", type=str, required=True)
-    parser.add_argument("--src1-fasta", type=str, required=True)
+    # --- Source ---
+    parser.add_argument("--name", type=str, default="src1")
+    parser.add_argument("--chrom", type=str, required=True)
+    parser.add_argument("--npz-fwd", type=str, required=True)
+    parser.add_argument("--npz-rev", type=str, required=True)
+    parser.add_argument("--fasta", type=str, required=True)
+    parser.add_argument("--ensemble", type=int, default=1)
 
-    # --- Source 2 (Optional) ---
-    parser.add_argument("--src2-name", type=str, default="src2")
-    parser.add_argument("--src2-chrom", type=str, default=None)
-    parser.add_argument("--src2-npz-fwd", type=str, default=None)
-    parser.add_argument("--src2-npz-rev", type=str, default=None)
-    parser.add_argument("--src2-fasta", type=str, default=None)
 
     return parser.parse_args()
 
@@ -66,43 +57,22 @@ def main():
     setup_env()
     args = parse_args()
     
-    # --- DYNAMIC PATH CONFIGURATION ---
-    if args.ablation:
-        print("--- Mode: ABLATION (Loading from Finetuned_models_ablation) ---")
-        model_dir_root = "finetuned_ablation"
-    else:
-        print("--- Mode: STANDARD (Loading from Finetuned_models) ---")
-        model_dir_root = "finetuned"
-
     # Template for loading the Yeast Genome model (Base)
-    BASE_H5_TEMPLATE = f"Models/{model_dir_root}/Yeast_genome/f{{fold}}/model_finetune.h5"
+    BASE_H5_TEMPLATE = f"Models/NatShorkie/f{{fold}}/model_finetune.h5"
 
     # Template for saving the new Fine-tuned model
-    FINETUNE_H5_TEMPLATE = f"Models/{model_dir_root}/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
-
+    FINETUNE_H5_TEMPLATE = f"Models2/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
 
     # 1. Build Data Sources
     sources = [
         Source(
-            name=args.src1_name,
-            chrom=args.src1_chrom,
-            npz_fwd=args.src1_npz_fwd,
-            npz_rev=args.src1_npz_rev,
-            fa_path=args.src1_fasta
+            name=args.name,
+            chrom=args.chrom,
+            npz_fwd=args.npz_fwd,
+            npz_rev=args.npz_rev,
+            fa_path=args.fasta
         )
     ]
-
-    if args.src2_chrom and args.src2_npz_fwd:
-        print(f"Adding second source: {args.src2_name} ({args.src2_chrom})")
-        sources.append(
-            Source(
-                name=args.src2_name,
-                chrom=args.src2_chrom,
-                npz_fwd=args.src2_npz_fwd,
-                npz_rev=args.src2_npz_rev,
-                fa_path=args.src2_fasta
-            )
-        )
 
     # 2. Preprocessing
     print("Loading coverage and sequences...")
@@ -114,10 +84,6 @@ def main():
 
     print("Generating windows...")
     wins_per_source, _ = build_windows_per_source(sources, WINDOW_BP, TARGET_WINS)
-    
-    # Global Stats
-    print("Computing global dataset statistics...")
-    global_mu, global_sigma = compute_global_stats(sources, wins_per_source, CROP_BP, BIN_SIZE_BP)
 
     # 3. Create CV Splits
     cv_splits = make_5fold_splits(sources, wins_per_source, n_folds=5)
@@ -126,7 +92,6 @@ def main():
     with open(PARAMS_JSON) as f:
         base_params = json.load(f)
     base_params["model"]["num_features"] = 170 
-
 
     # 5. Main Training Loop
     for cv, (train_pairs, test_pairs) in enumerate(cv_splits):
@@ -146,7 +111,7 @@ def main():
             bin_size_bp=BIN_SIZE_BP
         )
 
-        for fold in range(8):
+        for fold in range(args.ensemble):
             tf.keras.backend.clear_session()
             
             run_seed = SEED + (cv * 100) + fold
@@ -210,11 +175,11 @@ def main():
             ft.compile(optimizer=opt, loss='mse')
             # ft.summary()
 
-            ft.fit(train_ds, epochs=EPOCHS, verbose=1)
+            ft.fit(train_ds, epochs=EPOCHS, verbose=2)
 
             # Save
             out_path = FINETUNE_H5_TEMPLATE.format(
-                chrom=args.src1_chrom,
+                chrom=args.chrom,
                 cv=cv,
                 fold=fold
             )

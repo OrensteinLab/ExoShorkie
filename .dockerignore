@@ -1,0 +1,8 @@
+Models/
+Data/
+Results/
+*.npz
+*.h5
+*.log
+__pycache__/
+.git/

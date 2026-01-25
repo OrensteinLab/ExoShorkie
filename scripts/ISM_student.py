@@ -3,7 +3,6 @@
 # ---------- Reproducibility (must be before importing TF) ----------
 import os, random, numpy as np
 SEED = 42
-os.environ["CUDA_VISIBLE_DEVICES"]  = "1" # Adjust to your available GPU index
 os.environ["PYTHONHASHSEED"]        = str(SEED)
 os.environ["TF_DETERMINISTIC_OPS"]  = "1"
 os.environ["TF_CUDNN_DETERMINISTIC"]= "1"
