@@ -21,7 +21,7 @@ ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous g
 
 ## Introduction
 
-ExoShorkie is, to our knowledge, the first method that leverages transfer learning from a native-genome-trained yeast model to predict RNA-seq coverage of exogenous DNA.
+ExoShorkie is the first method that leverages transfer learning from a native-genome-trained yeast model to predict RNA-seq coverage of exogenous DNA.
 
 It is based on the Shorkie model introduced in:
 
@@ -101,15 +101,10 @@ After downloading, the expected directory structure is:
 ```text
 Models/
 ├── Data_storage_chr/
-│   ├── cv0/
-│   │   ├── f0/model_finetune.h5
-│   │   ├── f1/model_finetune.h5
-│   │   ├── ...
-│   │   └── f7/model_finetune.h5
-│   ├── cv1/
-│   │   └── ...
-│   └── cv4/
-│       └── ...
+│   ├── f0/model_finetune.h5
+│   ├── f1/
+│   ├── ...
+│   └── f7/
 ├── HPRT1/
 ├── HPRT1R/
 ├── Human_chr_7/
@@ -186,7 +181,7 @@ Predictions are saved as compressed NumPy `.npz` files in the `Results/` directo
 
 ```bash
 python predict.py \
-  --chrom Mpneumo \
+  --chrom M_pneumoniae\
   --cv 0 \
   --fold 0 \
   --fasta Data/genome/Mpneumo.fa \
