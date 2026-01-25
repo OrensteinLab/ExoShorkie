@@ -101,10 +101,15 @@ After downloading, the expected directory structure is:
 ```text
 Models/
 ├── Data_storage_chr/
-│   ├── f0/model_finetune.h5
-│   ├── f1/
-│   ├── ...
-│   └── f7/
+│   ├── cv0/
+│   │   ├── f0/model_finetune.h5
+│   │   ├── f1/model_finetune.h5
+│   │   ├── ...
+│   │   └── f7/model_finetune.h5
+│   ├── cv1/
+│   │   └── ...
+│   └── cv4/
+│       └── ...
 ├── HPRT1/
 ├── HPRT1R/
 ├── Human_chr_7/
@@ -114,7 +119,7 @@ Models/
 └── shorkie/
 ```
 
-Each dataset contains an ensemble of 8 fine-tuned models (`f0–f7`).
+Each dataset contains an ensemble of 8 fine-tuned models (f0–f7) for each cross-validation fold.
 
 ---
 
@@ -173,7 +178,6 @@ The prediction script expects:
 
 Predictions are saved as compressed NumPy `.npz` files in the `Results/` directory.
 
-- `pred_bins` contains predictions at **16 bp resolution**
 - `pred_bp` contains expanded predictions at **base-pair resolution**
 
 ---
@@ -185,8 +189,8 @@ python predict.py \
   --chrom Mpneumo \
   --cv 0 \
   --fold 0 \
-  --fasta Data/genome/S288c_Mpneumo.fa \
-  --out Results/pred_Mpneumo_cv0_f0.npz
+  --fasta Data/genome/Mpneumo.fa \
+  --out pred_Mpneumo_cv0_f0.npz
 ```
 
 ---
@@ -215,18 +219,18 @@ Expected directory structure:
 
 ```text
 Models/
-├── Data_storage_chr/cv0/
+├── <chrom>/cv0/
 │   ├── f0/model_finetune.h5
 │   ├── f1/model_finetune.h5
 │   ├── ...
 │   └── f7/model_finetune.h5
-├── HPRT1/
-├── HPRT1R/
-├── Human_chr_7/
-├── M_mycoides/
-├── M_pneumoniae/
-├── NatShorkie/
+├── <chrom>/cv1/
+│   └── ...
+└── <chrom>/cv4/
+    └── ...
 ```
+
+Where `<chrom>` is the genome/dataset name (e.g., Mpneumo, HPRT1).
 
 
 ###  Example usage

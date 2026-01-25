@@ -61,7 +61,7 @@ def main():
     BASE_H5_TEMPLATE = f"Models/NatShorkie/f{{fold}}/model_finetune.h5"
 
     # Template for saving the new Fine-tuned model
-    FINETUNE_H5_TEMPLATE = f"Models2/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
+    FINETUNE_H5_TEMPLATE = f"Models/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
 
     # 1. Build Data Sources
     sources = [
