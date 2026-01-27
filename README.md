@@ -115,7 +115,6 @@ Models/
 ├── Human_chr_7/
 ├── M_mycoides/
 ├── M_pneumoniae/
-├── NatShorkie/
 ```
 
 Each dataset contains an ensemble of 8 fine-tuned models (f0–f7) for each cross-validation fold.
