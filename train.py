@@ -20,10 +20,10 @@ BIN_SIZE_BP = 16
 LR = 1e-5
 EPOCHS = 3
 BATCH_SIZE = 32
-TARGET_WINS = 10_000
+
 
 # Params
-PARAMS_JSON = "Shorki_params.json" 
+PARAMS_JSON = "Shorkie_params.json" 
 
 def setup_env():
     """Sets seeds and environment variables for reproducibility."""
@@ -47,8 +47,8 @@ def parse_args():
     parser.add_argument("--npz-fwd", type=str, required=True)
     parser.add_argument("--npz-rev", type=str, required=True)
     parser.add_argument("--fasta", type=str, required=True)
-    parser.add_argument("--ensemble", type=int, default=1)
-
+    parser.add_argument("--ensemble", type=int, default=8)
+    parser.add_argument("--target-wins", type=int, default=10_000)
 
     return parser.parse_args()
 
@@ -56,6 +56,8 @@ def parse_args():
 def main():
     setup_env()
     args = parse_args()
+
+    TARGET_WINS = args.target_wins
     
     # Template for loading the Yeast Genome model (Base)
     BASE_H5_TEMPLATE = f"Models/NatShorkie/f{{fold}}/model_finetune.h5"
@@ -144,31 +146,19 @@ def main():
             # ----- collect BEFORE weights -----
             trunk_before = [w.numpy().copy() for w in m.model_trunk.weights]
 
-            head_layer = ft.get_layer(f"per_bin_f{fold}")
-            head_before = [w.numpy().copy() for w in head_layer.weights]
-
             # ----- load weights -----
             ft.load_weights(model_path, by_name=True)
 
             # ----- collect AFTER weights -----
             trunk_after = [w.numpy() for w in m.model_trunk.weights]
 
-            head_after = [w.numpy() for w in head_layer.weights]
-
             # ----- check trunk -----
             trunk_changed = any(np.any(b != a) for b, a in zip(trunk_before, trunk_after))
 
-            # ----- check head -----
-            head_changed = any(np.any(b != a) for b, a in zip(head_before, head_after))
-
             print(f"Trunk weights changed? {trunk_changed}")
-            print(f"Head weights changed?  {head_changed}")
 
             if not trunk_changed:
                 raise RuntimeError("Trunk weights did not change – incorrect model file or mismatch.")
-
-            if not head_changed:
-                print("WARNING: head weights did NOT change. Your checkpoint probably doesn't contain the Dense(1) head.")
 
             opt = tf.keras.optimizers.Adam(learning_rate=LR)
 

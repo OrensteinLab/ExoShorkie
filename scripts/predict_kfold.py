@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import argparse
 import numpy as np
@@ -18,10 +19,9 @@ CROP_BP       = 1024
 BIN_SIZE_BP   = 16
 STRIDE_BP     = 1024
 PRED_BATCH_SIZE = 256 
-PARAMS_JSON   = "Models/shorkie/params.json"
+PARAMS_JSON   = "Shorkie_params.json"
 
 N_FOLDS = 5
-N_ENSEMBLE = 8
 
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
@@ -37,10 +37,6 @@ def parse_args():
     
     # --- Mode Control ---
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--ablation", action="store_true", 
-                        help="Evaluate 'Finetuned_models_ablation' (Control).")
-    group.add_argument("--genomic", action="store_true", 
-                        help="Evaluate 'Yeast_genome' base model (Zero-Shot).")
 
     # --- Sources ---
     parser.add_argument("--src1-name", type=str, default="src1")
@@ -54,6 +50,7 @@ def parse_args():
     parser.add_argument("--src2-npz-fwd", type=str)
     parser.add_argument("--src2-npz-rev", type=str)
     parser.add_argument("--src2-fasta", type=str)
+    parser.add_argument("--ensemble", type=int, default=8)
     
     return parser.parse_args()
 
@@ -62,25 +59,7 @@ def main():
     args = parse_args()
 
     # --- DYNAMIC PATH CONFIGURATION ---
-    if args.genomic:
-        print("--- Mode: GENOMIC (Zero-Shot Yeast Model) ---")
-        # The Genomic model has NO CV splits. It's just f0..f7.
-        # We ignore the {cv} and {chrom} placeholders in the logic below.
-        MODEL_TEMPLATE = "Models/finetuned/Yeast_genome/f{fold}/model_finetune.h5"
-        result_suffix = "genomic_zeroshot"
-        
-    elif args.ablation:
-        print("--- Mode: ABLATION (Finetuned_models_ablation) ---")
-        model_root = "Models/finetuned_ablation"
-        MODEL_TEMPLATE = f"{model_root}/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
-        result_suffix = "ablation"
-        
-    else:
-        print("--- Mode: STANDARD (Finetuned_models) ---")
-        model_root = "Models/finetuned"
-        MODEL_TEMPLATE = f"{model_root}/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
-        result_suffix = "cross_validation"
-
+    MODEL_TEMPLATE = f"Models/{{chrom}}/cv{{cv}}/f{{fold}}/model_finetune.h5"
 
     # 1. Load Sources
     sources = [
@@ -128,14 +107,9 @@ def main():
         
         # D. Ensemble Prediction
         all_fold_preds = []
-        for fold in range(N_ENSEMBLE):
-            # --- PATH LOGIC ---
-            if args.genomic:
-                # Genomic mode ignores 'chrom' and 'cv' structure
-                model_path = MODEL_TEMPLATE.format(fold=fold)
-            else:
-                # Standard/Ablation mode uses full path
-                model_path = MODEL_TEMPLATE.format(chrom=chrom_name, cv=cv_idx, fold=fold)
+        for fold in range(args.ensemble):
+           
+            model_path = MODEL_TEMPLATE.format(chrom=chrom_name, cv=cv_idx, fold=fold)
             
             if not os.path.exists(model_path):
                 print(f"  [Warning] Missing: {model_path}")
@@ -206,16 +180,11 @@ def main():
 
     df = pd.DataFrame(cv_results)
 
-    if args.ablation:
-        results_dir = Path("Results/ISMB_results/Ablation")
-    elif args.genomic:
-        results_dir = Path("Results/ISMB_results/Genomic")
-    else:
-        results_dir = Path("Results/ISMB_results/Cross_validation")
+    results_dir = Path("Results/Cross_validation")
 
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    out_csv = results_dir / f"results_{chrom_name}_{result_suffix}.csv"
+    out_csv = results_dir / f"results_{chrom_name}.csv"
     df.to_csv(out_csv, index=False)
 
     print(f"\nSaved results to {out_csv}")

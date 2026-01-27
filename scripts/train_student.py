@@ -11,8 +11,10 @@ Required flag:
     --chrom CHROMOSOME_NAME
 """
 
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # ---------- Reproducibility ----------
-import os, random, numpy as np
+import random, numpy as np
 SEED = 42
 
 os.environ["PYTHONHASHSEED"]         = str(SEED)
@@ -38,8 +40,8 @@ from src.data_loader import *
 # ---------- CONSTANTS / PATHS ----------
 PARAMS_JSON          = "Models/shorkie/params.json"
 TRUNK_H5_TEMPLATE    = "Models/shorkie/f0/model_best.h5"        
-NPZ_TEMPLATE         = "Distillation/{chrom}/synthetic_{chrom}_mean_preds.npz"
-OUT_WEIGHTS_TEMPLATE = "Distillation/{chrom}/student_{chrom}_distilled.h5"
+NPZ_TEMPLATE         = "Results/Distillation/{chrom}/synthetic_{chrom}_mean_preds.npz"
+OUT_WEIGHTS_TEMPLATE = "Results/Distillation/{chrom}/student_{chrom}_distilled.h5"
 
 # --- Default hyperparameters (used in the paper) ---
 WINDOW_BP = 16384

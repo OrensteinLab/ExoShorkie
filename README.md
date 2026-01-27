@@ -207,6 +207,7 @@ The training script expects the following inputs:
 - `--npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
 - `--fasta` : FASTA file of the exogenous genome  
 - `--ensemble` : number of ensemble members to train per fold  
+- `--target-wins' : (optional) target number of training windows per fold (default: 10000)
 
 ---
 
@@ -240,7 +241,7 @@ python train.py \
   --fasta Data/genome/Mpneumo.fa \
   --npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
   --npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz \
-  --ensemble 1
+  --ensemble 8
   ```
 
 ## Model Training Data
@@ -253,11 +254,16 @@ https://doi.org/10.6084/m9.figshare.31075375
 
 ---
 
+## Additional Documentation
+
+More detailed pipeline guides are available in the `docs/` folder:
+
+- [NatShorkie: Fine-tuning on the native yeast genome](docs/NatShorkie.md)
+- [Distillation: Synthetic data + student training](docs/Distillation.md)
+- [Evaluation: Cross-genome benchmarking](docs/Evaluation.md)
+
 ## Contact
 
-For issues or questions regarding ExoShorkie, please contact:
-
-**Jonathan Mandl**  
-📧 jonathan.mandl2@gmail.com
+For issues or questions regarding ExoShorkie, please contact: jonathan.mandl2@gmail.com
 
 ---

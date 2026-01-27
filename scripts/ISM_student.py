@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 # ---------- Reproducibility (must be before importing TF) ----------
-import os, random, numpy as np
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import random, numpy as np
 SEED = 42
 os.environ["PYTHONHASHSEED"]        = str(SEED)
 os.environ["TF_DETERMINISTIC_OPS"]  = "1"
@@ -32,7 +34,7 @@ from baskerville.seqnn import SeqNN
 from src.data_loader import *
 
 # ---------- Constants ----------
-PARAMS_JSON = "Models/shorkie/params.json"
+PARAMS_JSON = "Shorkie_params.json"
 
 WINDOW_BP     = 16384
 CROP_BP       = 1024
@@ -108,7 +110,7 @@ def load_model(model):
         params = json.load(f)
     params["model"]["num_features"] = 170
 
-    model_path = f"Distillation/{model}/student_{model}_distilled.h5"
+    model_path = f"Results/Distillation/{model}/student_{model}_distilled.h5"
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Missing model: {model_path}")
 
@@ -203,7 +205,7 @@ def main():
     student = load_model(MODEL)
 
     # 3. Prepare Output Directory & Memmap
-    output_dir = "ISM/Maps/{CHROM}".format(CHROM=CHROM)
+    output_dir = "Results/ISM/Maps/{CHROM}".format(CHROM=CHROM)
     os.makedirs(output_dir, exist_ok=True)
     
     ism_path = f"{output_dir}/{MODEL}_model_chr_{CHROM}_{ORIENT}.dat"

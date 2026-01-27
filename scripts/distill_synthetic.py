@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # ---------- Reproducibility (must be before importing TF) ----------
-import os, random, numpy as np
+import random, numpy as np
 import argparse
 import json
 import gzip # Added missing import
@@ -50,14 +51,13 @@ PRED_BATCH_SIZE = 512
 PARAMS_JSON     = "Models/shorkie/params.json"
 BASES = ["A", "C", "G", "T"]
 
-N_ENSEMBLE_MEMBERS = 8  # Models per CV fold/run
 N_CV_FOLDS = 5          # Standard CV folds for Finetuned mode
 
 # --- MODEL PATH TEMPLATES ---
 # Finetuned template includes CV folder
-FINETUNE_H5_TEMPLATE = "Models/finetuned/{chrom}/cv{cv}/f{fold}/model_finetune.h5"
+FINETUNE_H5_TEMPLATE = "Models/{chrom}/cv{cv}/f{fold}/model_finetune.h5"
 # Genomic template is simpler (no CV)
-GENOMIC_H5_TEMPLATE = "Models/finetuned/Yeast_genome/f{fold}/model_finetune.h5"
+GENOMIC_H5_TEMPLATE = "Models/NatShorkie/f{fold}/model_finetune.h5"
 
 # --- GLOBAL GENOMIC DATA (Used for Genomic Mode) ---
 GENOMIC_CHROMS = [
@@ -216,7 +216,7 @@ def ensemble_predict_on_sequences(
     # Define iteration loops based on mode
     cv_folds = range(1) if is_genomic_mode else range(N_CV_FOLDS)
     
-    n_total_models = N_ENSEMBLE_MEMBERS * len(cv_folds)
+    n_total_models = n_ensemble * len(cv_folds)
 
     for cv_idx in cv_folds:
         for fold in range(n_ensemble):
@@ -305,6 +305,8 @@ def parse_args():
     
     parser.add_argument("--target-windows", type=int, default=10_000,
                         help="Target total genomic windows to sample from. Default 10000.")
+    
+    parser.add_argument("--ensemble", type=int, default=8)
 
     return parser.parse_args()
 
@@ -395,12 +397,12 @@ def main():
     # --- 4. Ensemble Prediction ---
     print("\nRunning ensemble predictions on TRAIN synthetic sequences…")
     train_mean_preds = ensemble_predict_on_sequences(
-        train_synth_sequences, MODEL_TEMPLATE, chrom_for_path, N_ENSEMBLE_MEMBERS, is_genomic
+        train_synth_sequences, MODEL_TEMPLATE, chrom_for_path, args.ensemble, is_genomic
     )
 
     # --- 5. Save Results ---
-    os.makedirs(f"Distillation/{chrom_for_path}", exist_ok=True)
-    out_path = f"Distillation/{chrom_for_path}/synthetic_{chrom_for_path}_mean_preds.npz"
+    os.makedirs(f"Results/Distillation/{chrom_for_path}", exist_ok=True)
+    out_path = f"Results/Distillation/{chrom_for_path}/synthetic_{chrom_for_path}_mean_preds.npz"
 
     np.savez_compressed(
         out_path,

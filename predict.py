@@ -20,7 +20,7 @@ PRED_BP     = WINDOW_BP - 2 * CROP_BP   # 14336
 STRIDE_BP   = PRED_BP                   # 14336
 BIN_SIZE_BP = 16
 
-PARAMS_JSON = "Shorki_params.json"
+PARAMS_JSON = "Shorkie_params.json"
 MODEL_TEMPLATE = "Models/{chrom}/cv{cv}/f{f}/model_finetune.h5"
 
 

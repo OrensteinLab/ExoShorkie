@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import random
 import copy
@@ -9,10 +10,11 @@ import tensorflow as tf
 from tensorflow.keras import mixed_precision
 from baskerville.seqnn import SeqNN
 
+
 # --- IMPORT EVERYTHING FROM DATALOADER ---
 from src.data_loader import *
 
-# --- CONFIG ---
+# --- CONFIG parameters of Paper ---
 SEED = 42
 WINDOW_BP     = 16384
 CROP_BP       = 1024
@@ -20,12 +22,10 @@ BIN_SIZE_BP   = 16
 LR            = 2e-5
 EPOCHS        = 5
 BATCH_SIZE    = 32
+TARGET_WINS = 10000
 
-PARAMS_JSON = "Models/shorkie/params.json"
+PARAMS_JSON = "Shorkie_params.json"
 TRUNK_H5_TEMPLATE = "Models/shorkie/f{fold}/model_best.h5"
-GENOME_FASTA = "Data/genome/S288c_Mpneumo.fa"
-GENOME_FWD = "Data/normalized_expression/genomic_fwd_norm.npz"
-GENOME_REV = "Data/normalized_expression/genomic_rev_norm.npz"
 
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
@@ -38,23 +38,21 @@ def setup_env():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ablation", action="store_true", 
-                        help="Train from scratch (Ablation) instead of loading weights")
+    parser.add_argument("--npz-fwd", type=str, required=True)
+    parser.add_argument("--npz-rev", type=str, required=True)
+    parser.add_argument("--fasta", type=str, required=True)
+    parser.add_argument("--ensemble", type=int, default=8)
     return parser.parse_args()
 
 def main():
     setup_env()
     args = parse_args()
 
-    # 1. Path Setup
-    if args.ablation:
-        print("--- Mode: ABLATION (Training from Scratch) ---")
-        out_root = "Models/finetuned_ablation"
-    else:
-        print("--- Mode: STANDARD (Loading Shorkie Weights) ---")
-        out_root = "Models/finetuned"
-    
-    FINETUNE_H5_TEMPLATE = f"{out_root}/Yeast_genome/f{{fold}}/model_finetune.h5"
+    GENOME_FASTA = args.fasta
+    GENOME_FWD = args.npz_fwd
+    GENOME_REV = args.npz_rev
+    # 1. Path Setup 
+    FINETUNE_H5_TEMPLATE = f"Models/NatShorkie/f{{fold}}/model_finetune.h5"
 
     # 2. Data Loading (Using src/data_loader)
     YEAST_CHROMS = [f"chr{x}" for x in ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI"]]
@@ -68,14 +66,22 @@ def main():
     print("Precomputing features...")
     precompute_full_features(sources)
 
-    train_pairs, stride = build_windows_full_genome(sources, WINDOW_BP, target_windows=10_000)
+    train_pairs, stride = build_windows_full_genome(sources, WINDOW_BP, target_windows=TARGET_WINS)
     
     print(f"Stride used: {stride} bp")
     print("Total training windows:", len(train_pairs))
     
     mu, sigma = compute_logz_stats_multi(sources, train_pairs, CROP_BP, BIN_SIZE_BP)
 
-    y_fwd, y_rc = precompute_window_labels(sources, train_pairs, mu, sigma, CROP_BP, BIN_SIZE_BP)
+    y_fwd, y_rc = precompute_window_labels(
+    sources,
+    train_pairs,
+    apply_norm=True,
+    mu=mu,
+    sigma=sigma,
+    crop_bp=CROP_BP,
+    bin_size_bp=BIN_SIZE_BP
+    )
     print(f"Computed log-z score stats: mu={mu:.4f}, sigma={sigma:.4f}")
 
     # 4. Model Setup
@@ -83,8 +89,10 @@ def main():
         params = json.load(f)
     params["model"]["num_features"] = 170
 
+    FOLDS = args.ensemble
+
     # 5. Training Loop
-    for fold in range(8):
+    for fold in range(FOLDS):
         tf.keras.backend.clear_session()
         fold_seed = SEED + fold
         print(f"\n=== Fold {fold} (Seed {fold_seed}) ===")
@@ -109,40 +117,25 @@ def main():
         ft = tf.keras.Model(m.model.input, y)
 
         # Weight Loading Logic
-        if not args.ablation:
+        trunk_path = TRUNK_H5_TEMPLATE.format(fold=fold)
+        print(f"Loading weights: {trunk_path}")
+        # ----- collect BEFORE weights -----
+        trunk_before = [w.numpy().copy() for w in m.model_trunk.weights]
 
-            trunk_path = TRUNK_H5_TEMPLATE.format(fold=fold)
-            print(f"Loading weights: {trunk_path}")
-                        # ----- collect BEFORE weights -----
-            trunk_before = [w.numpy().copy() for w in m.model_trunk.weights]
+        # ----- load weights -----
+        # (Logic preserved exactly as requested)
+        ft.load_weights(trunk_path, by_name=True)
 
-            head_layer = ft.get_layer(f"per_bin_f{fold}")
-            head_before = [w.numpy().copy() for w in head_layer.weights]
+        # ----- collect AFTER weights -----
+        trunk_after = [w.numpy() for w in m.model_trunk.weights]
 
-            # ----- load weights -----
-            # (Logic preserved exactly as requested)
-            ft.load_weights(trunk_path, by_name=True)
+        # ----- check trunk -----
+        trunk_changed = any(np.any(b != a) for b, a in zip(trunk_before, trunk_after))
 
-            # ----- collect AFTER weights -----
-            trunk_after = [w.numpy() for w in m.model_trunk.weights]
+        print(f"Trunk weights changed? {trunk_changed}")
 
-            head_after = [w.numpy() for w in head_layer.weights]
-
-            # ----- check trunk -----
-            trunk_changed = any(np.any(b != a) for b, a in zip(trunk_before, trunk_after))
-
-            # ----- check head -----
-            head_changed = any(np.any(b != a) for b, a in zip(head_before, head_after))
-
-            print(f"Trunk weights changed? {trunk_changed}")
-            print(f"Head weights changed?  {head_changed}")
-
-            if not trunk_changed:
-                raise RuntimeError("Trunk weights did not change – incorrect model file or mismatch.")
-
-            if not head_changed:
-                print("WARNING: head weights did NOT change. Your checkpoint probably doesn't contain the Dense(1) head.")
-
+        if not trunk_changed:
+            raise RuntimeError("Trunk weights did not change – incorrect model file or mismatch.")
 
         # Train & Save
         ft.compile(optimizer=tf.keras.optimizers.Adam(LR), loss='mse')

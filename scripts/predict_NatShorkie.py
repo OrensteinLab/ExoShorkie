@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import argparse
 import numpy as np
@@ -10,6 +11,7 @@ from tensorflow.keras import mixed_precision
 from baskerville.seqnn import SeqNN
 from pathlib import Path
 from src.data_loader import *
+import copy
 
 # --- Default hyperparameters (used in the paper) ---
 SEED = 42
@@ -18,10 +20,7 @@ CROP_BP       = 1024
 BIN_SIZE_BP   = 16
 STRIDE_BP     = 1024
 PRED_BATCH_SIZE = 256 
-PARAMS_JSON   = "Models/shorkie/params.json"
-
-N_FOLDS = 5
-N_ENSEMBLE = 8
+PARAMS_JSON   = "Shorkie_params.json"
 
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
@@ -34,6 +33,8 @@ def setup_env():
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate 5-fold CV Ensemble")
+
+    parser.add_argument("--ensemble", type=int, default=8)
 
     # --- Sources ---
     parser.add_argument("--src1-name", type=str, default="src1")
@@ -54,7 +55,9 @@ def main():
     setup_env()
     args = parse_args()
 
-    MODEL_TEMPLATE = "Models/finetuned/Yeast_genome/f{fold}/model_finetune.h5"
+    N_ENSEMBLE = args.ensemble
+
+    MODEL_TEMPLATE = "Models/NatShorkie/f{fold}/model_finetune.h5"
 
     # 1. Load Sources
     sources = [
@@ -104,7 +107,6 @@ def main():
     # D. Ensemble Prediction
     all_fold_preds = []
     for fold in range(N_ENSEMBLE):
-        # --- PATH LOGIC ---
         model_path = MODEL_TEMPLATE.format(fold=fold)
         if not os.path.exists(model_path):
             print(f"  [Warning] Missing: {model_path}")
@@ -113,7 +115,7 @@ def main():
         print(f"  Predicting: {model_path}")
         
         # tf.keras.backend.clear_session()
-        m = SeqNN(params["model"])
+        m = SeqNN(copy.deepcopy(params["model"]))
         y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
         y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
         ft = tf.keras.Model(m.model.input, y)
@@ -146,9 +148,11 @@ def main():
     out_npz = Path("Results/Correlations") / f"correlations_NatShorkie_{chrom_name}.npz"
 
     np.savez(
-        out_npz,
-        starts=starts,
-        correlations=np.array(correlations, dtype=np.float32),
+    out_npz,
+    starts=starts,
+    correlations=np.array(correlations, dtype=np.float32),
+    median_spearman=np.float32(median_r),
+    std_spearman=np.float32(std_r),
     )
 
     print(f"Saved correlations to {out_npz}")
