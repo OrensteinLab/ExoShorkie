@@ -101,7 +101,6 @@ Overall_Std,0.02,0.01
 ```
 
 It is saved in Results/Cross_validation/results_<chrom_name>.csv
----
 
 ## Metrics
 

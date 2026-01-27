@@ -185,7 +185,7 @@ Results/Distillation/<chrom>/synthetic_<chrom>_mean_preds.npz
 4. Saves distilled student weights to:
 
 ```text
-Distillation/<chrom>/student_<chrom>_distilled.h5
+Results/Distillation/<chrom>/student_<chrom>_distilled.h5
 ```
 
 ---

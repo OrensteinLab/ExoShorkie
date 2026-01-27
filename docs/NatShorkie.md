@@ -80,6 +80,7 @@ python scripts/predict_NatShorkie.py \
   --src1-fasta Data/genome/Mpneumo.fa \
   --src1-npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
   --src1-npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz
+```
 
 ### Output format
 
@@ -87,6 +88,7 @@ Correlation results are saved as compressed NumPy `.npz` files under:
 
 ```text
 Results/Correlations/correlations_NatShorkie_<chrom_name>.npz
+```
 
 The output file contains:
 
