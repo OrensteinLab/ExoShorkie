@@ -150,22 +150,27 @@ Each dataset includes:
 
 ### Expected model directory structure
 
-The script expects fine-tuned ExoShorkie models organized as:
+The script expects fine-tuned ExoShorkie models organized exactly as downloaded from Hugging Face.
+
+Each dataset directory contains **5 cross-validation folds** (`cv0–cv4`), and each fold contains **8 ensemble members** (`f0–f7`):
 
 ```text
 Models/
-├── Mpneumo/
+├── Data_storage_chr/
 │   ├── cv0/
 │   │   ├── f0/model_finetune.h5
+│   │   ├── f1/model_finetune.h5
 │   │   ├── ...
 │   │   └── f7/model_finetune.h5
 │   ├── cv1/
-│   ├── ...
+│   │   └── ...
 │   └── cv4/
-├── Mmmyco/
+│       └── ...
 ├── HPRT1/
 ├── HPRT1R/
-└── dChr/
+├── Human_chr_7/
+├── M_mycoides/
+├── M_pneumoniae/
 ```
 
 All available CV folds (`cv0–cv4`) and ensemble members (`f0–f7`) are used, except those trained on the held-out genome.
