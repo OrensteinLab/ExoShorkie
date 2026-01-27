@@ -185,10 +185,10 @@ Predictions are saved as compressed NumPy `.npz` files in the `Results/` directo
 ```bash
 python predict.py \
   --chrom M_pneumoniae\
-  --cv 0 \
-  --fold 0 \
+  --cv 2 \
+  --fold 2 \
   --fasta Data/genome/Mpneumo.fa \
-  --out pred_Mpneumo_cv0_f0.npz
+  --out pred_Mpneumo_cv2_f2
 ```
 
 ---

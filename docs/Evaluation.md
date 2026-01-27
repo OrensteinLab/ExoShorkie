@@ -1,4 +1,6 @@
-# Cross-Validation Ensemble Evaluation
+# Evaluations
+
+## 5-fold Cross-validation ensemble evaluation
 
 This script evaluates a **5-fold cross-validation ensemble** of ExoShorkie fine-tuned models on strand-resolved RNA-seq coverage.
 
@@ -12,23 +14,7 @@ and computes window-level **Spearman correlation** between predicted and measure
 
 ---
 
-## What the script does
-
-1. Loads one or two genome sources (FASTA + forward/reverse coverage `.npz`)
-2. Builds overlapping windows across the genome
-3. Splits windows into **5 cross-validation folds**
-4. Runs an ensemble of models per fold (`f0..f7`)
-5. Computes Spearman correlation for each window
-6. Reports median + mean correlation per CV fold
-7. Saves a CSV summary to:
-
-```text
-Results/Cross_validation/results_<chrom>.csv
-```
-
----
-
-## Inputs
+### Inputs
 
 ### Required arguments
 
@@ -39,7 +25,7 @@ Results/Cross_validation/results_<chrom>.csv
 | `--src1-npz-fwd` | Forward-strand RNA-seq coverage `.npz` |
 | `--src1-npz-rev` | Reverse-strand RNA-seq coverage `.npz` |
 
-### Optional second source
+#### Optional second source
 
 | Argument | Description |
 |---------|-------------|
@@ -48,7 +34,7 @@ Results/Cross_validation/results_<chrom>.csv
 | `--src2-npz-fwd` | Forward coverage `.npz` |
 | `--src2-npz-rev` | Reverse coverage `.npz` |
 
-### Ensemble size
+#### Ensemble size
 
 | Argument | Default |
 |---------|---------|
@@ -56,7 +42,7 @@ Results/Cross_validation/results_<chrom>.csv
 
 ---
 
-## Model directory structure
+### Model directory structure
 
 Expected layout:
 
@@ -74,7 +60,7 @@ Models/
 
 ---
 
-## Example usage
+### Example usage
 
 ```bash
 python scripts/predict_kfold.py \
@@ -87,7 +73,7 @@ python scripts/predict_kfold.py \
 
 ---
 
-## Output
+### Output
 
 A CSV file is written containing per-fold metrics:
 
@@ -102,7 +88,7 @@ Overall_Std,0.02,0.01
 
 It is saved in Results/Cross_validation/results_<chrom_name>.csv
 
-## Metrics
+### Metrics
 
 For each fold:
 
@@ -113,11 +99,88 @@ Overall summary:
 
 - Mean ± std across folds
 
+## Leave-One-Genome-Out Evaluation
+
+This script evaluates **cross-genome generalization** by predicting RNA-seq coverage on one held-out exogenous genome using an ensemble of models trained on **all other exogenous genomes**.  
+Performance is measured using window-level **Spearman correlation** between predicted and measured strand-resolved RNA-seq coverage.
+
 ---
 
-## Notes
+### Expected data structure (Figshare)
 
-- Uses deterministic TensorFlow settings (`SEED=42`)
-- Runs predictions in mixed precision (`mixed_bfloat16`)
-- Designed for evaluation of ExoShorkie fine-tuned ensembles
+After downloading the processed datasets from Figshare, the expected layout is:
 
+```text
+Data/
+├── M. pneumoniae/
+│   ├── Mpneumo.fa
+│   ├── Mpneumo_fwd_norm.npz
+│   └── Mpneumo_rev_norm.npz
+├── M. mycoides/
+│   ├── Mmmyco.fa
+│   ├── Mmmyco_fwd_norm.npz
+│   └── Mmmyco_rev_norm.npz
+├── HPRT1/
+│   ├── HPRT1.fa
+│   ├── HPRT1_fwd_norm.npz
+│   └── HPRT1_rev_norm.npz
+├── HPRT1R/
+│   ├── HPRT1R.fa
+│   ├── HPRT1R_fwd_norm.npz
+│   └── HPRT1R_rev_norm.npz
+├── Data-storage chr/
+│   ├── dChr.fa
+│   ├── dChr_fwd_norm.npz
+│   └── dChr_rev_norm.npz
+└── Human chr 7/
+    ├── chr7_part1.fa
+    ├── chr7_part2.fa
+    ├── Human_part1_fwd_norm.npz
+    ├── Human_part1_rev_norm.npz
+    ├── Human_part2_fwd_norm.npz
+    └── Human_part2_rev_norm.npz
+```
+
+Each dataset includes:
+- Genome FASTA
+- Forward-strand RNA-seq coverage (`*_fwd_norm.npz`)
+- Reverse-strand RNA-seq coverage (`*_rev_norm.npz`)
+
+---
+
+### Expected model directory structure
+
+The script expects fine-tuned ExoShorkie models organized as:
+
+```text
+Models/
+├── Mpneumo/
+│   ├── cv0/
+│   │   ├── f0/model_finetune.h5
+│   │   ├── ...
+│   │   └── f7/model_finetune.h5
+│   ├── cv1/
+│   ├── ...
+│   └── cv4/
+├── Mmmyco/
+├── HPRT1/
+├── HPRT1R/
+└── dChr/
+```
+
+All available CV folds (`cv0–cv4`) and ensemble members (`f0–f7`) are used, except those trained on the held-out genome.
+
+---
+
+### Running the script
+
+```bash
+python scripts/leave_genome_out.py
+```
+
+Results and window correlations are written to:
+
+```text
+Results/Correlations/correlations_leave_genome_out_<genome>.npz
+Results/leave_genome_out_results.csv
+```
