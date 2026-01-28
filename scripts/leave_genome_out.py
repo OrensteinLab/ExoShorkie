@@ -93,7 +93,7 @@ def build_windows_per_source(sources, win_bp, stride=1024):
 # ================================================================
 #   RUN ALL MODELS OVER ALL TEST SETS
 # ================================================================
-def run_models_over_test_sets(test_sets, chrom_list):
+def run_models_over_test_sets(test_sets, chrom_list, genome_names):
     """
     For each (chrom, cv, fold) model:
       - load model once
@@ -107,10 +107,10 @@ def run_models_over_test_sets(test_sets, chrom_list):
     # We iterate over all potential training models.
     # Even though we aren't using folds for testing, we use the models 
     # trained during the CV process (ensemble).
-    for chrom in chrom_list:
+    for chrom, genome in zip(chrom_list,genome_names):
         for cv in range(5):
             for fold in range(8):
-                model_path = FINETUNE_H5_TEMPLATE.format(chrom=chrom, cv=cv, fold=fold)
+                model_path = FINETUNE_H5_TEMPLATE.format(chrom=genome, cv=cv, fold=fold)
 
                 if not os.path.exists(model_path):
                     # It is possible not all folds exist or were run; skip if missing
@@ -158,10 +158,12 @@ def build_all_test_sets(all_sources):
     (using ALL windows, no splits).
     """
     chrom_list = []
+    genome_names = []
     for genome_list in all_sources:
         chrom = genome_list[0].chrom
         if chrom not in chrom_list:
             chrom_list.append(chrom)
+            genome_names.append(genome_list[0].name)
 
     test_sets = []
 
@@ -220,7 +222,7 @@ def build_all_test_sets(all_sources):
             "count": 0,
         })
 
-    return test_sets, chrom_list
+    return test_sets, chrom_list, genome_names
 
 
 # ================================================================
@@ -235,10 +237,10 @@ def evaluate_loocv(all_sources):
         load_and_attach(genome_list)
 
     # 1) Build test sets (All windows)
-    test_sets, chrom_list = build_all_test_sets(all_sources)
+    test_sets, chrom_list, genome_names = build_all_test_sets(all_sources)
 
     # 2) Run all models
-    run_models_over_test_sets(test_sets, chrom_list)
+    run_models_over_test_sets(test_sets, chrom_list, genome_names)
 
     # 3) Compute stats and save NPZ
     for ts in test_sets:
@@ -304,22 +306,22 @@ def evaluate_loocv(all_sources):
 def main():
     # Define sources as before
     human_sources = [
-        Source("human",
+        Source("Human_chr_7",
                "Data/Human chr 7/Human_part1_fwd_norm.npz",
                "Data/Human chr 7/Human_part1_rev_norm.npz",
                "chr7", "Data/Human chr 7/chr7_part1.fa"),
-        Source("human",
+        Source("Human_chr_7",
                "Data/Human chr 7/Human_part2_fwd_norm.npz",
                "Data/Human chr 7/Human_part2_rev_norm.npz",
                "chr7", "Data/Human chr 7/chr7_part2.fa")
     ]
 
-    mpneumo = [Source("Mpneumo",
+    mpneumo = [Source("M_pneumoniae",
                       "Data/M. pneumoniae/Mpneumo_fwd_norm.npz",
                       "Data/M. pneumoniae/Mpneumo_rev_norm.npz",
                       "Mpneumo", "Data/M. pneumoniae/Mpneumo.fa")]
 
-    mmyco = [Source("Mmmyco",
+    mmyco = [Source("M_mycoides",
                     "Data/M. mycoides/Mmmyco_fwd_norm.npz",
                     "Data/M. mycoides/Mmmyco_rev_norm.npz",
                     "Mmmyco", "Data/M. mycoides/Mmmyco.fa")]
@@ -334,7 +336,7 @@ def main():
                      "Data/HPRT1R/HPRT1R_rev_norm.npz",
                      "HPRT1R", "Data/HPRT1R/HPRT1R.fa")]
 
-    dchr = [Source("dChr",
+    dchr = [Source("Data_storage_chr",
                    "Data/Data-storage chr/dChr_fwd_norm.npz",
                    "Data/Data-storage chr/dChr_rev_norm.npz",
                    "dChr", "Data/Data-storage chr/dChr.fa")]
