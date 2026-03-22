@@ -351,7 +351,7 @@ def evaluate_loocv(all_sources, ablation_mode="full"):
     # 3) Compute stats per stride, save NPZ per stride, and one result row per genome
     strides = sorted(test_sets_by_stride.keys())
     n_genomes = len(test_sets_by_stride[strides[0]])
-    Path("Correlations").mkdir(parents=True, exist_ok=True)
+    Path("Results/Correlations").mkdir(parents=True, exist_ok=True)
 
     for i in range(n_genomes):
         name = test_sets_by_stride[strides[0]][i]["genome_name"]
@@ -385,9 +385,7 @@ def evaluate_loocv(all_sources, ablation_mode="full"):
 
     # Global CSV with both stride columns
     df_all = pd.DataFrame(all_results)
-    results_dir = Path("Results")
-    results_dir.mkdir(parents=True, exist_ok=True)
-    out_csv = results_dir / f"leave_one_genome_out_results_{ablation_mode}.csv"
+    out_csv = Path("Results") / f"leave_one_genome_out_results_{ablation_mode}.csv"
     df_all.to_csv(out_csv, index=False)
     print(f"\nSaved global results to {out_csv}")
 
