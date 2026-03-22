@@ -24,6 +24,42 @@ PARAMS_JSON = "Shorkie_params.json"
 MODEL_TEMPLATE = "Models/{chrom}/cv{cv}/f{f}/model_finetune.h5"
 
 
+def _layer_weights_snapshot(layer):
+    return [w.numpy().copy() for w in layer.weights]
+
+
+def _weights_changed(before, after):
+    return any(np.any(b != a) for b, a in zip(before, after))
+
+
+def load_weights_with_trunk_head_checks(model, base, weights_path: str, *, head_name: str = "per_bin"):
+    """Load weights and assert first/last trunk layers and head changed (sanity check)."""
+    head_layer = model.get_layer(head_name)
+    trunk_layers = [l for l in base.model_trunk.layers if l.weights]
+    if not trunk_layers:
+        raise RuntimeError("Trunk has no layers with weights.")
+    first_trunk, last_trunk = trunk_layers[0], trunk_layers[-1]
+
+    w_first_before = _layer_weights_snapshot(first_trunk)
+    w_last_before = _layer_weights_snapshot(last_trunk)
+    w_head_before = _layer_weights_snapshot(head_layer)
+
+    model.load_weights(weights_path)
+
+    first_changed = _weights_changed(w_first_before, _layer_weights_snapshot(first_trunk))
+    last_changed = _weights_changed(w_last_before, _layer_weights_snapshot(last_trunk))
+    head_changed = _weights_changed(w_head_before, _layer_weights_snapshot(head_layer))
+
+    print(f"    First trunk layer ({first_trunk.name}) changed? {first_changed}")
+    print(f"    Last trunk layer ({last_trunk.name}) changed? {last_changed}")
+    print(f"    Head ({head_name}) changed? {head_changed}")
+    if not (first_changed and last_changed and head_changed):
+        raise ValueError(
+            f"Expected all checked layers to update after load_weights({weights_path!r}). "
+            f"got first={first_changed}, last={last_changed}, head={head_changed}"
+        )
+
+
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
     os.environ["TF_DETERMINISTIC_OPS"] = "1"
@@ -72,7 +108,7 @@ def build_inference_model(params_json: str):
     y = tf.keras.layers.Dense(1, name="per_bin")(base.model_trunk.output)
     y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
     model = tf.keras.Model(base.model.input, y)
-    return model
+    return model, base
 
 
 def get_model_path(chrom: str, cv: int, fold: int):
@@ -151,8 +187,9 @@ def main():
     if not os.path.exists(path):
         raise FileNotFoundError("No model weights found. Checked:\n" + path)
 
-    model = build_inference_model(PARAMS_JSON)
-    model.load_weights(path)
+    model, base = build_inference_model(PARAMS_JSON)
+    print(f"Loading weights: {path}")
+    load_weights_with_trunk_head_checks(model, base, path)
 
     if args.rc:
         bins_rc = predict_bins_from_features(model, X_rc, L, args.batch)

@@ -22,6 +22,51 @@ STRIDE_BP     = 1024
 PRED_BATCH_SIZE = 256 
 PARAMS_JSON   = "Shorkie_params.json"
 
+
+def _layer_weights_snapshot(layer):
+    return [w.numpy().copy() for w in layer.weights]
+
+
+def _weights_changed(before, after):
+    return any(np.any(b != a) for b, a in zip(before, after))
+
+
+def load_natshorkie_ensemble_member(model_params: dict, fold: int, model_path: str) -> tf.keras.Model:
+    """Build SeqNN + per-fold head, load weights, verify first/last trunk and head layers updated."""
+    m = SeqNN(copy.deepcopy(model_params))
+    head_name = f"per_bin_f{fold}"
+    y = tf.keras.layers.Dense(1, name=head_name)(m.model_trunk.output)
+    y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
+    ft = tf.keras.Model(m.model.input, y)
+
+    head_layer = ft.get_layer(head_name)
+    trunk_layers = [l for l in m.model_trunk.layers if l.weights]
+    if not trunk_layers:
+        raise RuntimeError("Trunk has no layers with weights.")
+    first_trunk, last_trunk = trunk_layers[0], trunk_layers[-1]
+
+    w_first_before = _layer_weights_snapshot(first_trunk)
+    w_last_before = _layer_weights_snapshot(last_trunk)
+    w_head_before = _layer_weights_snapshot(head_layer)
+
+    ft.load_weights(model_path, by_name=True)
+
+    first_changed = _weights_changed(w_first_before, _layer_weights_snapshot(first_trunk))
+    last_changed = _weights_changed(w_last_before, _layer_weights_snapshot(last_trunk))
+    head_changed = _weights_changed(w_head_before, _layer_weights_snapshot(head_layer))
+
+    print(f"    First trunk layer ({first_trunk.name}) changed? {first_changed}")
+    print(f"    Last trunk layer ({last_trunk.name}) changed? {last_changed}")
+    print(f"    Head ({head_name}) changed? {head_changed}")
+    if not (first_changed and last_changed and head_changed):
+        raise ValueError(
+            f"Expected all checked layers to update after load_weights({model_path!r}). "
+            f"got first={first_changed}, last={last_changed}, head={head_changed}"
+        )
+
+    return ft
+
+
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
     os.environ["TF_DETERMINISTIC_OPS"] = "1"
@@ -113,16 +158,12 @@ def main():
             continue
             
         print(f"  Predicting: {model_path}")
-        
-        # tf.keras.backend.clear_session()
-        m = SeqNN(copy.deepcopy(params["model"]))
-        y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
-        y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
-        ft = tf.keras.Model(m.model.input, y)
-        
-        ft.load_weights(model_path)
+
+        ft = load_natshorkie_ensemble_member(params["model"], fold, model_path)
         preds = ft.predict(test_ds, verbose=1)
         all_fold_preds.append(preds)
+
+        tf.keras.backend.clear_session()
 
     # E. Stats
     preds_ens = np.mean(all_fold_preds, axis=0)

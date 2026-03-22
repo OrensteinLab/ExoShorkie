@@ -1,0 +1,16 @@
+Data/
+Data_dir/
+Results/
+Models/
+results/
+*.log
+*.sh
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+*.pyzwz
+corr.py

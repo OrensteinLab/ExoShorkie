@@ -26,9 +26,8 @@ RUN python -m pip install --no-cache-dir \
     matplotlib==3.7.1 \
     scipy==1.9.1
 
-# Install baskerville code but don’t touch TF
+# Freeze baskerville to commit used in ExoShorkie paper
 RUN python -m pip install --no-cache-dir --no-deps \
-    "git+https://github.com/calico/baskerville-yeast.git@main"
+    "git+https://github.com/calico/baskerville-yeast.git@88e89f48e7df73c0856ce93ae35e8878794d19e9"
 
-COPY . .
 CMD ["bash"]

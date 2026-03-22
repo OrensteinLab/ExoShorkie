@@ -3,6 +3,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import argparse
+import copy
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -22,6 +23,22 @@ PRED_BATCH_SIZE = 256
 PARAMS_JSON   = "Shorkie_params.json"
 
 N_FOLDS = 5
+
+
+def build_kfold_finetuned_model(model_params: dict, fold: int) -> tf.keras.Model:
+    """SeqNN trunk + per-fold dense head + squeeze (matches train.py)."""
+    m = SeqNN(copy.deepcopy(model_params))
+    y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
+    y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
+    return tf.keras.Model(m.model.input, y)
+
+
+def load_kfold_finetuned_model(model_params: dict, fold: int, model_path: str) -> tf.keras.Model:
+    """Build graph and load `model_finetune.h5` weights."""
+    ft = build_kfold_finetuned_model(model_params, fold)
+    ft.load_weights(model_path)
+    return ft
+
 
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
@@ -117,13 +134,8 @@ def main():
                 
             print(f"  Predicting: {model_path}")
             
-            # tf.keras.backend.clear_session()
-            m = SeqNN(params["model"])
-            y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
-            y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
-            ft = tf.keras.Model(m.model.input, y)
-            
-            ft.load_weights(model_path)
+            tf.keras.backend.clear_session()
+            ft = load_kfold_finetuned_model(params["model"], fold, model_path)
             preds = ft.predict(test_ds, verbose=1)
             all_fold_preds.append(preds)
 

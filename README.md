@@ -15,6 +15,7 @@ ExoShorkie is a method for accurately predicting RNA-seq coverage of exogenous g
 - [Prediction](#prediction)
 - [Training](#training)
 - [Model Training Data](#model-training-data)
+- [Motif visualization](#motif-visualization)
 - [Contact](#contact)
 
 ---
@@ -201,7 +202,7 @@ ExoShorkie provides a training script for fine-tuning the native-genome baseline
 The training script expects the following inputs:
 
 - `--name` : name of the exogenous dataset  
-- `--chrom` : chromosome / genome identifier  
+- `--chrom` : chromosome / genome identifier (the name of the directory in `Models/` where the models will be saved) 
 - `--npz-fwd` : forward-strand RNA-seq coverage `.npz` file  
 - `--npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
 - `--fasta` : FASTA file of the exogenous genome  
@@ -253,6 +254,12 @@ https://doi.org/10.6084/m9.figshare.31075375
 
 ---
 
+## Motif visualization
+
+ISM / motif interpretation notebooks live under `Motif_visualization/`. Install the extra Python packages listed in [docs/Motif_visualization.md](docs/Motif_visualization.md), set paths and output directory (`OUT_DIR`) in the **first code cell** of each notebook, then run cells top-to-bottom.
+
+---
+
 ## Additional Documentation
 
 More detailed pipeline guides are available in the `docs/` folder:
@@ -260,6 +267,7 @@ More detailed pipeline guides are available in the `docs/` folder:
 - [NatShorkie: Fine-tuning on the native yeast genome](docs/NatShorkie.md)
 - [Distillation: Synthetic data + student training](docs/Distillation.md)
 - [Evaluation: Cross-genome benchmarking](docs/Evaluation.md)
+- [Interpretability: ISM / motif interpretation](docs/Motif_visualization.md)
 
 ## Contact
 

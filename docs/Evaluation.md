@@ -180,12 +180,14 @@ All available CV folds (`cv0–cv4`) and ensemble members (`f0–f7`) are used, 
 ### Running the script
 
 ```bash
-python scripts/leave_genome_out.py
+python scripts/leave_one_genome_out.py [--ablation {full|human|bacteria|syn}]
 ```
+
+`--ablation` (default `full`): `full` = leave-one-out over all genomes; `human`, `bacteria`, `syn` = ensemble restricted to that group’s checkpoints under `Models/<name>/` (see `scripts/leave_one_genome_out.py`).
 
 Results and window correlations are written to:
 
 ```text
-Results/Correlations/correlations_leave_genome_out_<genome>.npz
-Results/leave_genome_out_results.csv
+Results/Correlations/correlations_<genome>_<ablation>_stride<bp>.npz
+Results/leave_one_genome_out_results_<ablation>.csv
 ```

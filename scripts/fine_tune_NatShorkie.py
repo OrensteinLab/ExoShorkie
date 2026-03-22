@@ -27,6 +27,47 @@ TARGET_WINS = 10000
 PARAMS_JSON = "Shorkie_params.json"
 TRUNK_H5_TEMPLATE = "Models/shorkie/f{fold}/model_best.h5"
 
+
+def _layer_weights_snapshot(layer):
+    return [w.numpy().copy() for w in layer.weights]
+
+
+def _weights_changed(before, after):
+    return any(np.any(b != a) for b, a in zip(before, after))
+
+
+def load_shorkie_trunk_into_natshorkie_model(model_params: dict, fold: int, trunk_weights_path: str) -> tf.keras.Model:
+    """Build SeqNN + head, load pretrained Shorkie trunk, verify first/last trunk layers updated."""
+    m = SeqNN(copy.deepcopy(model_params))
+    y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
+    y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
+    ft = tf.keras.Model(m.model.input, y)
+
+    trunk_layers = [l for l in m.model_trunk.layers if l.weights]
+    if not trunk_layers:
+        raise RuntimeError("Trunk has no layers with weights.")
+    first_trunk, last_trunk = trunk_layers[0], trunk_layers[-1]
+
+    w_first_before = _layer_weights_snapshot(first_trunk)
+    w_last_before = _layer_weights_snapshot(last_trunk)
+
+    print(f"Loading weights: {trunk_weights_path}")
+    ft.load_weights(trunk_weights_path, by_name=True)
+
+    first_changed = _weights_changed(w_first_before, _layer_weights_snapshot(first_trunk))
+    last_changed = _weights_changed(w_last_before, _layer_weights_snapshot(last_trunk))
+
+    print(f"    First trunk layer ({first_trunk.name}) changed? {first_changed}")
+    print(f"    Last trunk layer ({last_trunk.name}) changed? {last_changed}")
+    if not (first_changed and last_changed):
+        raise ValueError(
+            f"Expected first and last trunk layers to update after load_weights({trunk_weights_path!r}). "
+            f"got first={first_changed}, last={last_changed}"
+        )
+
+    return ft
+
+
 def setup_env():
     os.environ["PYTHONHASHSEED"] = str(SEED)
     os.environ["TF_DETERMINISTIC_OPS"] = "1"
@@ -42,6 +83,7 @@ def parse_args():
     parser.add_argument("--npz-rev", type=str, required=True)
     parser.add_argument("--fasta", type=str, required=True)
     parser.add_argument("--ensemble", type=int, default=8)
+    parser.add_argument("--target_wins", type=int, default=10000)
     return parser.parse_args()
 
 def main():
@@ -51,6 +93,7 @@ def main():
     GENOME_FASTA = args.fasta
     GENOME_FWD = args.npz_fwd
     GENOME_REV = args.npz_rev
+    TARGET_WINS = args.target_wins
     # 1. Path Setup 
     FINETUNE_H5_TEMPLATE = f"Models/NatShorkie/f{{fold}}/model_finetune.h5"
 
@@ -108,34 +151,8 @@ def main():
             WINDOW_BP, BATCH_SIZE, shuffle=True, seed=fold_seed
         )
 
-        # Build Model (using deepcopy to be safe)
-        m = SeqNN(copy.deepcopy(params["model"]))
-
-        # Add Head
-        y = tf.keras.layers.Dense(1, name=f"per_bin_f{fold}")(m.model_trunk.output)
-        y = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, -1))(y)
-        ft = tf.keras.Model(m.model.input, y)
-
-        # Weight Loading Logic
         trunk_path = TRUNK_H5_TEMPLATE.format(fold=fold)
-        print(f"Loading weights: {trunk_path}")
-        # ----- collect BEFORE weights -----
-        trunk_before = [w.numpy().copy() for w in m.model_trunk.weights]
-
-        # ----- load weights -----
-        # (Logic preserved exactly as requested)
-        ft.load_weights(trunk_path, by_name=True)
-
-        # ----- collect AFTER weights -----
-        trunk_after = [w.numpy() for w in m.model_trunk.weights]
-
-        # ----- check trunk -----
-        trunk_changed = any(np.any(b != a) for b, a in zip(trunk_before, trunk_after))
-
-        print(f"Trunk weights changed? {trunk_changed}")
-
-        if not trunk_changed:
-            raise RuntimeError("Trunk weights did not change – incorrect model file or mismatch.")
+        ft = load_shorkie_trunk_into_natshorkie_model(params["model"], fold, trunk_path)
 
         # Train & Save
         ft.compile(optimizer=tf.keras.optimizers.Adam(LR), loss='mse')
