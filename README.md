@@ -160,9 +160,7 @@ Models/
 
 ExoShorkie provides a prediction script for generating RNA-seq coverage predictions over an input FASTA genome.
 
-### Command-line interface (`predict.py`)
-
-**Required**
+**Required arguments**
 
 - **`--chrom`** — Training dataset name; selects checkpoints under `Models/<chrom>/`.
 - **`--cv`** — Cross-validation fold index (`cv` subdirectory).
@@ -201,9 +199,8 @@ python predict.py \
 
 ExoShorkie provides a training script for fine-tuning the native-genome baseline **NatShorkie** models on an exogenous genome using **5-fold cross-validation**.
 
-### Command-line interface (`train.py`)
 
-**Required**
+**Required arguments**
 
 - **`--name`** — Human-readable dataset label (logging and metadata).
 - **`--chrom`** — Identifier used for `Models/<chrom>/` (checkpoint layout on disk).
