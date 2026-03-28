@@ -14,3 +14,4 @@ results/
 *.pyzw
 *.pyzwz
 corr.py
+.jupyter/

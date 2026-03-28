@@ -5,21 +5,6 @@
 This script generates **AlphaGenome-style synthetic DNA windows** (strand flip + ~4% SNVs + small SVs) from FASTA sequences, then runs an **ensemble of Shorkie/NatShorkie models** to predict RNA-seq coverage for each synthetic window.  
 It saves a compressed `.npz` file that can be used for **distillation / student training**.
 
----
-
-## What the script does
-
-1. Loads sequences from one or more FASTA sources.
-2. Builds fixed-length windows of size **16,384 bp** (`WINDOW_BP`).
-3. Samples windows and applies augmentations:
-   - 50% reverse-complement
-   - ~4% base substitutions (SNVs)
-   - Poisson(λ=1) structural variants: insertion / deletion / inversion (max 20 bp)
-   - Crops/pads back to exactly 16,384 bp
-4. Runs an ensemble of models to predict each synthetic sequence.
-5. Averages predictions across all models and saves outputs to an `.npz`.
-
----
 
 ## Modes
 
@@ -91,7 +76,7 @@ Models/
 ```bash
 python scripts/distill_synthetic.py \
   --genomic \
-  --src1-fasta Data/genome/S288c_reference.fa \
+  --src1-fasta 'Data/Yeast genome/S288C_R64.fa' \
   --n-synth 50000 \
   --target-windows 10000
 ```
@@ -101,7 +86,7 @@ python scripts/distill_synthetic.py \
 ```bash
 python scripts/distill_synthetic.py \
   --src1-chrom Mpneumo \
-  --src1-fasta Data/genome/Mpneumo.fa \
+  --src1-fasta 'Data/M. pneumoniae/Mpneumo.fa' \
   --n-synth 50000 \
   --target-windows 10000 \
   --ensemble 1 
@@ -230,13 +215,7 @@ python scripts/train_student.py \
 
 ## Hyperparameters (defaults)
 
-| Parameter     | Value      |
-|--------------|------------|
-| Window size   | 16384 bp   |
-| Epochs        | 20         |
-| Batch size    | 64         |
-| Learning rate | 2e-5       |
-| Output bins   | 896        |
+Student distillation in `train_student.py` uses: **16,384 bp** windows, **20** epochs, batch size **64**, learning rate **2×10⁻⁵**, and **896** output bins unless you change the script.
 
 ---
 
@@ -264,43 +243,20 @@ During training, the script reports:
 
 This script performs base-resolution **in-silico mutagenesis (ISM)** over an entire genome or chromosome using a distilled student ExoShorkie/Shorkie model.
 
-For every nucleotide position, the script generates all **3 possible single-base substitutions**, runs the model prediction, and measures the effect on total predicted RNA-seq coverage.
 
-The computation is optimized to run almost entirely on the GPU using batched mutation generation.
 
----
+## Program arguments (`scripts/ISM_student.py`)
 
-## What this script does
+**Required**
 
-For a given genome FASTA and a distilled student model:
+- **`--model`** — Model name used to resolve distilled student weights on disk.
+- **`--chrom`** — FASTA record id for the sequence to scan.
+- **`--fasta`** — Genome FASTA path.
+- **`--mu`**, **`--sigma`** — Mean and standard deviation for log z-score normalization of predictions.
 
-1. Loads the chromosome sequence
-2. Splits it into overlapping 16,384 bp windows
-3. Predicts baseline RNA-seq coverage for each window
-4. Mutates each interior position to all alternate bases
-5. Re-predicts coverage for each mutation in large GPU batches
-6. Computes the log2 fold-change effect of each mutation
-7. Writes a genome-wide ISM score map to disk
+**Optional**
 
----
-
-## Inputs
-
-### Required arguments
-
-| Argument | Description |
-|---------|-------------|
-| `--model` | Model name (used to locate distilled weights) |
-| `--chrom` | Chromosome identifier in the FASTA file |
-| `--fasta` | Path to genome FASTA file |
-| `--mu` | Mean used for log z-score normalization |
-| `--sigma` | Std-dev used for log z-score normalization |
-
-### Optional flag
-
-| Flag | Description |
-|------|-------------|
-| `--rev` | Run on the reverse-complement strand |
+- **`--rev`** — Run ISM on the reverse-complement strand.
 
 ---
 
@@ -312,7 +268,7 @@ For a given genome FASTA and a distilled student model:
 python scripts/ISM_student.py \
   --model Mpneumo \
   --chrom Mpneumo \
-  --fasta Data/genome/Mpneumo.fa \
+  --fasta 'Data/M. pneumoniae/Mpneumo.fa' \
   --mu 2 \
   --sigma 2
 ```
@@ -323,7 +279,7 @@ python scripts/ISM_student.py \
 python scripts/ISM_student.py \
   --model Mpneumo \
   --chrom Mpneumo \
-  --fasta Data/genome/Mpneumo.fa \
+  --fasta 'Data/M. pneumoniae/Mpneumo.fa' \
   --mu 2 \
   --sigma 2 \
   --rev
@@ -372,14 +328,7 @@ The output is a float32 matrix of shape:
 (L, 4)
 ```
 
-Where `L` is the chromosome length and columns correspond to mutated base channels:
-
-| Column | Base |
-|-------|------|
-| 0 | A |
-| 1 | C |
-| 2 | G |
-| 3 | T |
+Where `L` is the chromosome length. Column **0** is A, **1** is C, **2** is G, and **3** is T for the mutated base channel.
 
 Each entry stores the **log2 fold-change** in predicted total coverage when mutating that base.
 

@@ -2,41 +2,60 @@
 
 Notebooks compare genomic vs. genome-specific (ISM) attributions, scan motifs, and plot low-correlation windows with model predictions vs. RNA-seq coverage.
 
-## Dependencies (not in the main `Dockerfile`)
+## Docker image (`Dockerfile.motifs`)
 
-`Motif_visualization/` uses **PyTorch** (tangermeme / seqlets), **tangermeme**, **logomaker**, plus **Jupyter** if you use JupyterLab or classic notebooks. The base `exoshorkie` image matches the rest of the repo (TensorFlow + Baskerville); install the following in **your conda/venv** or **inside a running container** before opening the notebooks:
+From the repository root, build the main image, then the motif layer:
 
 ```bash
-# PyTorch with CUDA 12.x wheels (adjust index if you use CPU-only or a different CUDA)
-python -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124
-
-python -m pip install --no-cache-dir logomaker tangermeme jupyterlab ipykernel
+docker build -t exoshorkie .
+docker build -f Dockerfile.motifs -t exoshorkie-motifs .
 ```
 
-Install **after** any TensorFlow image setup so pip does not replace the NVIDIA TensorFlow build. For a local environment, pick a [PyTorch install](https://pytorch.org/get-started/locally/) that matches your CUDA/driver.
+The image sets `JUPYTER_*` paths under `/workspace/.jupyter` so Jupyter does not try to create `/.local` when the container runs as a non-root `--user` (missing `HOME`).
 
-## How to run
+### JupyterLab in Docker
 
-Use the **repository root** as the working directory so `from src....` imports resolve, then open and run `Motif_visualization/Mpneumo_correlations.ipynb` (or `chr7_correlations.ipynb`, etc.) in your usual Jupyter or IDE setup.
+From the **repository root** on the host (so `-v "$(pwd)":/workspace` is the repo):
+
+```bash
+docker run -it --rm --gpus all \
+  -p 8888:8888 \
+  -v "$(pwd)":/workspace -w /workspace \
+  exoshorkie-motifs \
+  jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+```
+
+Open the URL printed in the terminal (includes an access token). Remote server: use SSH port forwarding, e.g. `ssh -L 8888:localhost:8888 user@server`.
+
+If you still see permission errors (custom `--user`), add `-e HOME=/workspace` to the `docker run` line.
+
+## How to run (local IDE / no Jupyter in Docker)
+
+Use the **repository root** as the working directory so `from src....` imports resolve, then open `Motif_visualization/Mpneumo_correlations.ipynb` (or `chr7_correlations.ipynb`, etc.) in your editor or a local Jupyter.
 
 ## Configuration (first code cell)
 
 Adjust paths and IDs for your assembly. Example names follow `Mpneumo_correlations.ipynb`.
 
-| Variable | Role |
-|----------|------|
-| `CHROM_ID` | Sequence name to read from the FASTA (e.g. `Mpneumo`). |
-| `FA_PATH` | Path to the FASTA containing that sequence. |
-| `ISM_GENOMIC_FWD`, `ISM_GENOMIC_REV` | Genomic-model ISM maps (`.dat`, memmap `(L, 4)` float32). |
-| `ISM_RANDOM_FWD`, `ISM_RANDOM_REV` | Genome-specific model ISM maps (same layout). |
-| `GENOMIC_MODEL` | Distilled genomic student weights (`.h5`). |
-| `RANDOM_MODEL` | Distilled exogenous genome student weights (`.h5`). |
-| `PARAMS_JSON` | Shorkie `params.json` (trunk architecture). |
-| `NPZ_COV_FWD`, `NPZ_COV_REV` | Normalized strand coverage `.npz` files. |
-| `MEME_DB_PATH` | Motif database (MEME format, e.g. SwissRegulon). |
-| `WINDOW_SIZE` | Window length (bp) for correlation/plotting helpers. |
-| `threshold` | Seqlet / motif hit threshold. |
-| `mu_r`, `sigma_r` | Mean and std for inverse-transforming **random-model** predictions. |
-| `mu_g`, `sigma_g` | Mean and std for **genomic-model** predictions. |
-| `OUT_DIR` | Directory for saved figures (created under `ISM/Notebook_output/<genome>/…`). |
-| `start_genomic_bp` | (chr7 notebook only) Genome coordinate offset for plots. |
+**Sequence and inputs**
+
+- **`CHROM_ID`** — FASTA record id to load (e.g. `Mpneumo`).
+- **`FA_PATH`** — Path to that FASTA.
+- **`ISM_GENOMIC_FWD`**, **`ISM_GENOMIC_REV`** — Genomic-model ISM maps (`.dat`, memmap shape `(L, 4)`, float32).
+- **`ISM_RANDOM_FWD`**, **`ISM_RANDOM_REV`** — Genome-specific (exogenous) ISM maps, same layout.
+- **`NPZ_COV_FWD`**, **`NPZ_COV_REV`** — Normalized strand coverage `.npz` files.
+
+**Models and motif resources**
+
+- **`GENOMIC_MODEL`**, **`RANDOM_MODEL`** — Distilled student weights (`.h5`) for genomic vs. genome-specific models.
+- **`PARAMS_JSON`** — Shorkie `params.json` (trunk architecture).
+- **`MEME_DB_PATH`** — Motif database in MEME format (e.g. SwissRegulon).
+
+**Plotting and normalization**
+
+- **`WINDOW_SIZE`** — Window length in bp for correlation and plotting helpers.
+- **`threshold`** — Seqlet / motif hit threshold.
+- **`mu_r`**, **`sigma_r`** — Mean and standard deviation for inverse-transforming random-model predictions.
+- **`mu_g`**, **`sigma_g`** — Mean and standard deviation for genomic-model predictions.
+- **`OUT_DIR`** — Output directory for figures (typically under `ISM/Notebook_output/<genome>/…`).
+- **`start_genomic_bp`** — *(Human chr7 notebook only.)* Genome coordinate offset for axis-aligned plots.

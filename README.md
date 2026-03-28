@@ -160,16 +160,20 @@ Models/
 
 ExoShorkie provides a prediction script for generating RNA-seq coverage predictions over an input FASTA genome.
 
-### Script arguments
+### Command-line interface (`predict.py`)
 
-The prediction script expects:
+**Required**
 
-- `--chrom` : dataset name the model was trained on  
-- `--cv`    : cross-validation fold index  
-- `--fold`  : ensemble member index (0–7)  
-- `--fasta` : FASTA file of the genome to predict on  
-- `--out`   : output `.npz` file path  
-- `--rc`    : (optional) generate predictions on the reverse-complement strand  
+- **`--chrom`** — Training dataset name; selects checkpoints under `Models/<chrom>/`.
+- **`--cv`** — Cross-validation fold index (`cv` subdirectory).
+- **`--fold`** — Ensemble member index in `0`–`7` (`f<fold>/`).
+- **`--fasta`** — Input genome FASTA.
+- **`--out`** — Base name for the output file; the script writes `Results/<out>.npz`.
+
+**Optional**
+
+- **`--batch`** — Inference batch size (default: 64).
+- **`--rc`** — Also produce predictions on the reverse-complement strand.
 
 ---
 
@@ -185,10 +189,10 @@ Predictions are saved as compressed NumPy `.npz` files in the `Results/` directo
 
 ```bash
 python predict.py \
-  --chrom M_pneumoniae\
+  --chrom Mpneumo \
   --cv 2 \
   --fold 2 \
-  --fasta Data/genome/Mpneumo.fa \
+  --fasta 'Data/M. pneumoniae/Mpneumo.fa' \
   --out pred_Mpneumo_cv2_f2
 ```
 
@@ -197,17 +201,19 @@ python predict.py \
 
 ExoShorkie provides a training script for fine-tuning the native-genome baseline **NatShorkie** models on an exogenous genome using **5-fold cross-validation**.
 
-### Script arguments
+### Command-line interface (`train.py`)
 
-The training script expects the following inputs:
+**Required**
 
-- `--name` : name of the exogenous dataset  
-- `--chrom` : chromosome / genome identifier (the name of the directory in `Models/` where the models will be saved) 
-- `--npz-fwd` : forward-strand RNA-seq coverage `.npz` file  
-- `--npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
-- `--fasta` : FASTA file of the exogenous genome  
-- `--ensemble` : number of ensemble members to train per fold  
-- `--target-wins' : (optional) target number of training windows per fold (default: 10000)
+- **`--name`** — Human-readable dataset label (logging and metadata).
+- **`--chrom`** — Identifier used for `Models/<chrom>/` (checkpoint layout on disk).
+- **`--npz-fwd`**, **`--npz-rev`** — Forward- and reverse-strand normalized coverage `.npz` files (keys must match `--chrom` where applicable).
+- **`--fasta`** — Exogenous genome FASTA.
+
+**Optional**
+
+- **`--ensemble`** — Number of ensemble members per CV fold (default: 8).
+- **`--target-wins`** — Target training windows per fold (default: 10,000).
 
 ---
 
@@ -238,9 +244,9 @@ Where `<chrom>` is the genome/dataset name (e.g., Mpneumo, HPRT1).
 python train.py \
   --name Mpneumo \
   --chrom Mpneumo \
-  --fasta Data/genome/Mpneumo.fa \
-  --npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
-  --npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz \
+  --fasta 'Data/M. pneumoniae/Mpneumo.fa' \
+  --npz-fwd 'Data/M. pneumoniae/Mpneumo_fwd_norm.npz' \
+  --npz-rev 'Data/M. pneumoniae/Mpneumo_rev_norm.npz' \
   --ensemble 8
   ```
 
@@ -251,12 +257,6 @@ ExoShorkie is trained on six exogenous RNA-seq datasets described in the main pa
 All preprocessed datasets used for training and evaluation are available on Figshare:
 
 https://doi.org/10.6084/m9.figshare.31075375
-
----
-
-## Motif visualization
-
-ISM / motif interpretation notebooks live under `Motif_visualization/`. Install the extra Python packages listed in [docs/Motif_visualization.md](docs/Motif_visualization.md), set paths and output directory (`OUT_DIR`) in the **first code cell** of each notebook, then run cells top-to-bottom.
 
 ---
 

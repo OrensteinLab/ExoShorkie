@@ -1,0 +1,20 @@
+# Interpretability / motif notebooks: PyTorch + tangermeme + Jupyter on top of the main image.
+# Build the base image first:  docker build -t exoshorkie .
+# Then:                        docker build -f Dockerfile.motifs -t exoshorkie-motifs .
+
+FROM exoshorkie
+
+# CUDA 12.4 PyTorch wheels; only-if-needed avoids pulling upgrades over the NVIDIA TensorFlow stack.
+RUN python -m pip install --no-cache-dir --upgrade-strategy only-if-needed \
+    torch --index-url https://download.pytorch.org/whl/cu124
+
+RUN python -m pip install --no-cache-dir --upgrade-strategy only-if-needed \
+    logomaker tangermeme jupyterlab ipykernel
+
+# Jupyter defaults to ~/.local under $HOME; with `docker run --user uid:gid`, HOME is often
+# unset or "/" → PermissionError on /.local. Pin dirs to the mounted workspace.
+ENV JUPYTER_CONFIG_DIR=/workspace/.jupyter \
+    JUPYTER_DATA_DIR=/workspace/.jupyter/data \
+    JUPYTER_RUNTIME_DIR=/workspace/.jupyter/runtime
+
+CMD ["bash"]

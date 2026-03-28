@@ -6,14 +6,16 @@ This corresponds to the genomic adaptation step described in the paper.
 
 ---
 
-### Script arguments
+### Command-line interface (`scripts/fine_tune_NatShorkie.py`)
 
-The fine-tuning script expects the following inputs:
+**Required**
 
-- `--npz-fwd` : forward-strand yeast RNA-seq coverage `.npz` file  
-- `--npz-rev` : reverse-strand yeast RNA-seq coverage `.npz` file  
-- `--fasta`   : FASTA file of the yeast genome  
-- `--ensemble` : number of models in ensemble (default: 8)
+- **`--npz-fwd`**, **`--npz-rev`** — Forward- and reverse-strand yeast genomic coverage `.npz` files.
+- **`--fasta`** — Yeast genome FASTA.
+
+**Optional**
+
+- **`--ensemble`** — Number of ensemble members to train (default: 8).
 
 ---
 
@@ -36,9 +38,9 @@ Example usage
 
 ```bash
 python scripts/fine_tune_NatShorkie.py \
-  --fasta Data/genome/S288c_reference.fa \
-  --npz-fwd Data/normalized_expression/genomic_fwd_norm.npz \
-  --npz-rev Data/normalized_expression/genomic_rev_norm.npz
+  --fasta 'Data/Yeast genome/S288C_R64.fa' \
+  --npz-fwd 'Data/Yeast genome/genomic_fwd_norm.npz' \
+  --npz-rev 'Data/Yeast genome/genomic_rev_norm.npz'
 ```
 
 ## Evaluation (NatShorkie)
@@ -47,27 +49,22 @@ The NatShorkie evaluation script computes window-level Spearman correlations bet
 
 ---
 
-### Script arguments
+### Command-line interface (`scripts/predict_NatShorkie.py`)
 
-The NatShorkie prediction/evaluation script expects the following inputs:
+**Primary source (required)**
 
-- `--ensemble` : size of ensemble to test
+- **`--src1-name`** — Dataset label for outputs and logging.
+- **`--src1-chrom`** — Chromosome or genome identifier (FASTA key and coverage keys as used by the loader).
+- **`--src1-npz-fwd`**, **`--src1-npz-rev`** — Strand-resolved coverage `.npz` files.
+- **`--src1-fasta`** — Genome FASTA.
 
-#### Required source (source 1)
+**Second source (optional)** — Supply all `--src2-*` fields together if you evaluate two sources in one run.
 
-- `--src1-name` : name of the dataset  
-- `--src1-chrom` : chromosome / genome identifier  
-- `--src1-npz-fwd` : forward-strand RNA-seq coverage `.npz` file  
-- `--src1-npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
-- `--src1-fasta` : FASTA file of the genome  
+- **`--src2-name`**, **`--src2-chrom`**, **`--src2-npz-fwd`**, **`--src2-npz-rev`**, **`--src2-fasta`**
 
-#### Optional second source (source 2)
+**Other**
 
-- `--src2-name` : name of the dataset  
-- `--src2-chrom` : chromosome / genome identifier  
-- `--src2-npz-fwd` : forward-strand RNA-seq coverage `.npz` file  
-- `--src2-npz-rev` : reverse-strand RNA-seq coverage `.npz` file  
-- `--src2-fasta` : FASTA file of the genome  
+- **`--ensemble`** — Number of ensemble members to average (default: 8).
 
 ---
 
@@ -77,9 +74,9 @@ The NatShorkie prediction/evaluation script expects the following inputs:
 python scripts/predict_NatShorkie.py \
   --src1-name Mpneumo \
   --src1-chrom Mpneumo \
-  --src1-fasta Data/genome/Mpneumo.fa \
-  --src1-npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
-  --src1-npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz
+  --src1-fasta 'Data/M. pneumoniae/Mpneumo.fa'  \
+  --src1-npz-fwd 'Data/M. pneumoniae/Mpneumo_fwd_norm.npz' \
+  --src1-npz-rev 'Data/M. pneumoniae/Mpneumo_rev_norm.npz'
 ```
 
 ### Output format

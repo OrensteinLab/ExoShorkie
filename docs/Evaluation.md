@@ -14,31 +14,21 @@ and computes window-level **Spearman correlation** between predicted and measure
 
 ---
 
-### Inputs
+### Program arguments (`scripts/predict_kfold.py`)
 
-### Required arguments
+**Primary source (required)**
 
-| Argument | Description |
-|---------|-------------|
-| `--src1-chrom` | Genome/chromosome identifier |
-| `--src1-fasta` | FASTA file for source genome |
-| `--src1-npz-fwd` | Forward-strand RNA-seq coverage `.npz` |
-| `--src1-npz-rev` | Reverse-strand RNA-seq coverage `.npz` |
+- **`--src1-chrom`** — Genome or chromosome identifier for source 1.
+- **`--src1-fasta`** — FASTA path for source 1.
+- **`--src1-npz-fwd`**, **`--src1-npz-rev`** — Forward- and reverse-strand coverage `.npz` files for source 1.
 
-#### Optional second source
+**Second source (optional)** — If any `--src2-*` argument is used, provide the full set below so evaluation can run on two genomes
 
-| Argument | Description |
-|---------|-------------|
-| `--src2-chrom` | Second genome identifier |
-| `--src2-fasta` | FASTA file |
-| `--src2-npz-fwd` | Forward coverage `.npz` |
-| `--src2-npz-rev` | Reverse coverage `.npz` |
+- **`--src2-chrom`**, **`--src2-fasta`**, **`--src2-npz-fwd`**, **`--src2-npz-rev`**
 
-#### Ensemble size
+**Other**
 
-| Argument | Default |
-|---------|---------|
-| `--ensemble` | 8 models |
+- **`--ensemble`** — Number of ensemble members to load per fold (default: 8).
 
 ---
 
@@ -102,7 +92,6 @@ Overall summary:
 ## Leave-One-Genome-Out Evaluation
 
 This script evaluates **cross-genome generalization** by predicting RNA-seq coverage on one held-out exogenous genome using an ensemble of models trained on **all other exogenous genomes**.  
-Performance is measured using window-level **Spearman correlation** between predicted and measured strand-resolved RNA-seq coverage.
 
 ---
 
@@ -183,7 +172,7 @@ All available CV folds (`cv0–cv4`) and ensemble members (`f0–f7`) are used, 
 python scripts/leave_one_genome_out.py [--ablation {full|human|bacteria|syn}]
 ```
 
-`--ablation` (default `full`): `full` = leave-one-out over all genomes; `human`, `bacteria`, `syn` = ensemble restricted to that group’s checkpoints under `Models/<name>/` (see `scripts/leave_one_genome_out.py`).
+`--ablation` (default `full`): `full` = leave-one-out over all genomes; `human`, `bacteria`, `syn` = ensemble restricted to the specific group of genomes
 
 Results and window correlations are written to:
 

@@ -44,8 +44,7 @@ NPZ_TEMPLATE         = "Results/Distillation/{chrom}/synthetic_{chrom}_mean_pred
 OUT_WEIGHTS_TEMPLATE = "Results/Distillation/{chrom}/student_{chrom}_distilled.h5"
 
 # --- Default hyperparameters (used in the paper) ---
-WINDOW_BP = 16384
-EPOCHS     = 20     
+WINDOW_BP = 16384  
 BATCH_SIZE = 64
 LR        = 2e-5
 # ------------------------------------
@@ -129,6 +128,12 @@ def parse_args():
         type=str,
         help="Chromosome name used in synthetic_{chrom}_mean_preds.npz",
     )
+    p.add_argument(
+        "--epochs",
+        type=int,
+        default=20,
+        help="Number of epochs to train for.",
+    )
     return p.parse_args()
 # ------------------------------------
 
@@ -151,6 +156,8 @@ def build_student(params, trunk_h5):
 def main():
     args = parse_args()
     chrom = args.chrom
+
+    EPOCHS = args.epochs
 
     # ---- Load NPZ ----
     npz_path = NPZ_TEMPLATE.format(chrom=chrom)
