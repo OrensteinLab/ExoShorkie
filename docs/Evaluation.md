@@ -54,11 +54,11 @@ Models/
 
 ```bash
 python scripts/predict_kfold.py \
-  --src1-chrom Mpneumo \
-  --src1-fasta Data/genome/Mpneumo.fa \
-  --src1-npz-fwd Data/normalized_expression/Mpneumo_fwd_norm.npz \
-  --src1-npz-rev Data/normalized_expression/Mpneumo_rev_norm.npz \
-  --ensemble 8
+    --src1-chrom Mpneumo \
+    --src1-fasta 'Data/M. pneumoniae/Mpneumo.fa' \
+    --src1-npz-fwd 'Data/M. pneumoniae/Mpneumo_fwd_norm.npz' \
+    --src1-npz-rev 'Data/M. pneumoniae/Mpneumo_rev_norm.npz' \
+    --ensemble 8
 ```
 
 ---
