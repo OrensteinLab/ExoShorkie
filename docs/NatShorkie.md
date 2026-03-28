@@ -6,9 +6,8 @@ This corresponds to the genomic adaptation step described in the paper.
 
 ---
 
-### Command-line interface (`scripts/fine_tune_NatShorkie.py`)
 
-**Required**
+**Required arguments**
 
 - **`--npz-fwd`**, **`--npz-rev`** — Forward- and reverse-strand yeast genomic coverage `.npz` files.
 - **`--fasta`** — Yeast genome FASTA.
