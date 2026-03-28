@@ -67,15 +67,6 @@ python scripts/predict_kfold.py \
 
 A CSV file is written containing per-fold metrics:
 
-```text
-cv_fold,median_spearman,mean_spearman
-0,0.52,0.50
-1,0.55,0.53
-...
-Overall_Mean,0.54,0.52
-Overall_Std,0.02,0.01
-```
-
 It is saved in Results/Cross_validation/results_<chrom_name>.csv
 
 ### Metrics
