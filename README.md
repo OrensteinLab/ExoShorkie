@@ -117,7 +117,7 @@ Models/
 ├── M_mycoides/
 ├── M_pneumoniae/
 ```
-
+This directory structure is expected by prediction and training scripts.
 Each dataset contains an ensemble of 8 fine-tuned models (f0–f7) for each cross-validation fold.
 
 ---
@@ -264,10 +264,8 @@ More detailed pipeline guides are available in the `docs/` folder:
 - [NatShorkie: Fine-tuning on the native yeast genome](docs/NatShorkie.md)
 - [Distillation: Synthetic data + student training](docs/Distillation.md)
 - [Evaluation: Cross-genome benchmarking](docs/Evaluation.md)
-- [Interpretability: ISM / motif interpretation](docs/Motif_visualization.md)
 
 ## Contact
 
 For issues or questions regarding ExoShorkie, please contact: jonathan.mandl2@gmail.com
 
----

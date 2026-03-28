@@ -48,9 +48,8 @@ The NatShorkie evaluation script computes window-level Spearman correlations bet
 
 ---
 
-### Command-line interface (`scripts/predict_NatShorkie.py`)
 
-**Primary source (required)**
+** Required arguments **
 
 - **`--src1-name`** — Dataset label for outputs and logging.
 - **`--src1-chrom`** — Chromosome or genome identifier (FASTA key and coverage keys as used by the loader).
