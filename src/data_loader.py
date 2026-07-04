@@ -47,7 +47,7 @@ def per_bin_dna_features(seq: str) -> np.ndarray:
 def build_shorkie_features(seq: str) -> np.ndarray:
     dna4 = per_bin_dna_features(seq)
     species = np.zeros((165,), dtype=np.uint8)
-    species[114] = 1
+    species[109] = 1
     species_tiled = np.tile(species, (dna4.shape[0], 1))
     return np.concatenate([dna4, species_tiled], axis=1)
 
